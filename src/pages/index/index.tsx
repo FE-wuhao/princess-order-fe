@@ -84,7 +84,7 @@ export default function Index() {
           {groups.map((group) => (
             <View
               key={group.id}
-              className='bg-white p-4 mb-2.5 rounded-lg flex justify-between items-center shadow-sm'
+              className='bg-white p-4 mb-2-5 rounded-lg flex justify-between items-center shadow-sm'
               onClick={() => handleGroupClick(group.id)}
             >
               <Text className='text-base'>{group.name}</Text>

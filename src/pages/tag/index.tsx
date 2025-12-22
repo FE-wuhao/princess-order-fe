@@ -52,7 +52,7 @@ export default function Tag() {
           {tags.map((tag) => (
             <View
               key={tag.id}
-              className='bg-white p-4 mb-2.5 rounded-lg flex justify-between items-center'
+              className='bg-white p-4 mb-2-5 rounded-lg flex justify-between items-center'
             >
               <Text className='text-base'>{tag.name}</Text>
               <Text className='text-gray-500 text-sm'>

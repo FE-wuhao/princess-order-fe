@@ -25,14 +25,8 @@
     "dev:rn": "npm run build:rn -- --watch",
     "dev:qq": "npm run build:qq -- --watch",
     "dev:jd": "npm run build:jd -- --watch",
-    "dev:quickapp": "npm run build:quickapp -- --watch"
-  },
-  "babel": {
-    "presets": [
-      [
-        "taro"
-      ]
-    ]
+    "dev:quickapp": "npm run build:quickapp -- --watch",
+    "start": "npm run dev:weapp"
   },
   "author": "",
   "dependencies": {
@@ -40,6 +34,7 @@
     "@tarojs/helper": "^4.1.9",
     "@tarojs/plugin-framework-react": "^4.1.9",
     "@tarojs/plugin-platform-weapp": "^4.1.9",
+    "@tarojs/react": "^4.1.9",
     "@tarojs/runtime": "^4.1.9",
     "@tarojs/shared": "^4.1.9",
     "@tarojs/taro": "^4.1.9",
@@ -49,25 +44,27 @@
   "devDependencies": {
     "@babel/core": "^7.8.0",
     "@babel/preset-react": "^7.22.5",
+    "@babel/preset-typescript": "^7.28.5",
     "@tarojs/cli": "^4.1.9",
     "@tarojs/webpack5-runner": "^4.1.9",
     "@types/react": "^18.2.0",
     "@types/webpack-env": "^1.13.6",
     "@typescript-eslint/eslint-plugin": "^5.20.0",
     "@typescript-eslint/parser": "^5.20.0",
+    "autoprefixer": "^10.4.16",
     "babel-preset-taro": "^4.1.9",
     "eslint": "^8.12.0",
     "eslint-config-taro": "^4.1.9",
+    "eslint-plugin-import": "^2.12.0",
     "eslint-plugin-react": "^7.8.2",
     "eslint-plugin-react-hooks": "^4.2.0",
-    "eslint-plugin-import": "^2.12.0",
     "postcss": "^8.4.18",
     "postcss-pxtransform": "^4.1.9",
-    "tailwindcss": "^3.4.0",
-    "autoprefixer": "^10.4.16",
+    "sharp": "^0.34.5",
     "stylelint": "^14.2.0",
+    "tailwindcss": "^3.4.0",
+    "taro-plugin-tailwind": "^1.3.4",
     "typescript": "^4.1.0",
     "webpack": "^5.69.0"
   }
 }
-

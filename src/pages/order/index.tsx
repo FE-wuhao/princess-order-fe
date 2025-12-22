@@ -94,13 +94,13 @@ export default function Order() {
   return (
     <View className='p-5 min-h-screen bg-gray-100 pb-24'>
       <View className='bg-white p-4 rounded-lg mb-5'>
-        <Text className='text-base font-bold mb-2.5 block'>选择菜谱</Text>
+        <Text className='text-base font-bold mb-2-5 block'>选择菜谱</Text>
         {recipes.length > 0 ? (
           <View>
             {recipes.map((recipe) => (
               <View
                 key={recipe.id}
-                className={`p-3 border rounded mb-2.5 last:mb-0 ${
+                className={`p-3 border rounded mb-2-5 last-mb-0 ${
                   selectedRecipeId === recipe.id
                     ? 'border-primary bg-pink-50'
                     : 'border-gray-200'
@@ -117,13 +117,13 @@ export default function Order() {
       </View>
 
       <View className='bg-white p-4 rounded-lg mb-5'>
-        <Text className='text-base font-bold mb-2.5 block'>选择仆人</Text>
+        <Text className='text-base font-bold mb-2-5 block'>选择仆人</Text>
         {servants.length > 0 ? (
           <View>
             {servants.map((servant) => (
               <View
                 key={servant.userId}
-                className={`p-3 border rounded mb-2.5 last:mb-0 ${
+                className={`p-3 border rounded mb-2-5 last-mb-0 ${
                   selectedServantId === servant.userId
                     ? 'border-primary bg-pink-50'
                     : 'border-gray-200'
@@ -139,7 +139,7 @@ export default function Order() {
         )}
       </View>
 
-      <View className='fixed bottom-0 left-0 right-0 p-5 bg-white shadow-[0_-2px_4px_rgba(0,0,0,0.1)]'>
+      <View className='fixed bottom-0 left-0 right-0 p-5 bg-white shadow-top'>
         <Button
           type='primary'
           disabled={!selectedRecipeId || !selectedServantId}

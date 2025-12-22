@@ -80,7 +80,7 @@ export default function Recipe() {
       </View>
 
       <View className='bg-white p-4 rounded-lg mb-5'>
-        <View className='flex justify-between items-center mb-2.5'>
+        <View className='flex justify-between items-center mb-2-5'>
           <Text className='text-base font-bold'>做法</Text>
           <Button size='mini' type='primary' onClick={handleAddAiMethods}>
             AI检索做法
@@ -90,11 +90,11 @@ export default function Recipe() {
         {recipe.methods && recipe.methods.length > 0 ? (
           <View>
             {recipe.methods.map((method, index) => (
-              <View key={method.id} className='flex items-start py-2.5 border-b border-gray-200 last:border-b-0'>
-                <Text className='mr-2.5 text-gray-500'>{index + 1}.</Text>
+              <View key={method.id} className='flex items-start py-2-5 border-b border-gray-200 last-border-b-0'>
+                <Text className='mr-2-5 text-gray-500'>{index + 1}.</Text>
                 <Text className='flex-1 leading-relaxed'>{method.content}</Text>
                 {method.source === 'ai' && (
-                  <Text className='ml-2.5 px-1.5 py-0.5 bg-primary text-white rounded text-xs'>AI</Text>
+                  <Text className='ml-2-5 px-1-5 py-0-5 bg-primary text-white rounded text-xs'>AI</Text>
                 )}
               </View>
             ))}

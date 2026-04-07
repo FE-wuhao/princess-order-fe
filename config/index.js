@@ -1,8 +1,7 @@
-// 根据环境变量加载对应的配置文件
+// Taro 的 build/watch 流程会把 NODE_ENV 置为 production，不能用它判断业务环境。
+// 本地默认走 dev 配置；只有显式设置 APP_ENV=production 时才使用 prod。
 const config =
-  process.env.NODE_ENV === "development"
-    ? require("./dev")
-    : require("./prod");
+  process.env.APP_ENV === "production" ? require("./prod") : require("./dev");
 
 module.exports = {
   projectName: "princess-order-miniprogram",
@@ -16,7 +15,7 @@ module.exports = {
   },
   sourceRoot: "src",
   outputRoot: "dist",
-  plugins: ["@tarojs/plugin-framework-react", "taro-plugin-tailwind"],
+  plugins: ["@tarojs/plugin-framework-react"],
   defineConstants: config.defineConstants || {},
   copy: {
     patterns: [],

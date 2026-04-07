@@ -1,4 +1,4 @@
 export default {
-  navigationBarTitleText: '分组列表'
+  navigationBarTitleText: '今日点餐看板'
 }
 

@@ -1,6 +1,5 @@
-import { request } from '../utils/request';
+import { request } from '../utils/request'
 
-// 认证相关
 export const authApi = {
   wxLogin: (code: string, userInfo?: { nickname?: string; avatar?: string }) =>
     request({
@@ -8,126 +7,284 @@ export const authApi = {
       method: 'POST',
       data: { code, ...userInfo },
     }),
-};
+}
 
-// 用户相关
 export const userApi = {
   getProfile: () => request({ url: '/users/profile' }),
-};
+}
 
-// 分组相关
 export const groupApi = {
   getList: () => request({ url: '/groups' }),
   getDetail: (id: number) => request({ url: `/groups/${id}` }),
-  create: (name: string) => request({ url: '/groups', method: 'POST', data: { name } }),
-  addMember: (groupId: number, userId: number, role?: 'princess' | 'servant', tagName?: string) =>
+  create: (name: string) =>
+    request({ url: '/groups', method: 'POST', data: { name } }),
+  createInvite: (groupId: number, expiredAt?: string) =>
+    request({
+      url: `/groups/${groupId}/invites`,
+      method: 'POST',
+      data: expiredAt ? { expiredAt } : undefined,
+    }),
+  joinByInvite: (inviteCode: string) =>
+    request({
+      url: '/groups/join',
+      method: 'POST',
+      data: { inviteCode },
+    }),
+  addMember: (
+    groupId: number,
+    userId: number,
+    displayRole?: 'requester' | 'cook' | 'both',
+    tagId?: number,
+  ) =>
     request({
       url: `/groups/${groupId}/members`,
       method: 'POST',
-      data: { userId, role, tagName },
+      data: { userId, displayRole, tagId },
+    }),
+  updateMember: (
+    groupId: number,
+    memberId: number,
+    data: {
+      displayRole?: 'requester' | 'cook' | 'both'
+      tagId?: number | null
+      status?: 'active' | 'left' | 'removed'
+      canManageGroup?: boolean
+      canManageMembers?: boolean
+      canManageRecipes?: boolean
+      canCreateOrder?: boolean
+      canAcceptOrder?: boolean
+    },
+  ) =>
+    request({
+      url: `/groups/${groupId}/members/${memberId}`,
+      method: 'PATCH',
+      data,
     }),
   removeMember: (groupId: number, userId: number) =>
     request({
       url: `/groups/${groupId}/members/${userId}`,
       method: 'DELETE',
     }),
-};
+}
 
-// 菜谱相关
 export const recipeApi = {
   getList: (groupId: number) => request({ url: `/groups/${groupId}/recipes` }),
-  getDetail: (id: number) => request({ url: `/recipes/${id}` }),
-  create: (groupId: number, name: string) =>
+  getDetail: (groupId: number, id: number) =>
+    request({ url: `/groups/${groupId}/recipes/${id}` }),
+  create: (
+    groupId: number,
+    data: {
+      name: string
+      description?: string
+      coverImage?: string
+      difficulty?: 'easy' | 'normal' | 'hard'
+      estimatedMinutes?: number
+      servingSize?: number
+    },
+  ) =>
     request({
       url: `/groups/${groupId}/recipes`,
       method: 'POST',
-      data: { name },
+      data,
     }),
-  update: (id: number, name: string) =>
+  update: (
+    groupId: number,
+    id: number,
+    data: {
+      name?: string
+      description?: string | null
+      coverImage?: string | null
+      difficulty?: 'easy' | 'normal' | 'hard' | null
+      estimatedMinutes?: number | null
+      servingSize?: number | null
+      status?: 'active' | 'archived'
+    },
+  ) =>
     request({
-      url: `/recipes/${id}`,
-      method: 'PUT',
-      data: { name },
+      url: `/groups/${groupId}/recipes/${id}`,
+      method: 'PATCH',
+      data,
     }),
-  delete: (id: number) =>
+  archive: (groupId: number, id: number) =>
     request({
-      url: `/recipes/${id}`,
+      url: `/groups/${groupId}/recipes/${id}/archive`,
+      method: 'PATCH',
+    }),
+  delete: (groupId: number, id: number) =>
+    request({
+      url: `/groups/${groupId}/recipes/${id}`,
       method: 'DELETE',
     }),
-  addMethod: (recipeId: number, content: string) =>
+  replaceIngredients: (
+    groupId: number,
+    recipeId: number,
+    ingredients: Array<{
+      name: string
+      amount?: string
+      unit?: string
+      orderIndex: number
+    }>,
+  ) =>
     request({
-      url: `/recipes/${recipeId}/methods`,
+      url: `/groups/${groupId}/recipes/${recipeId}/ingredients`,
+      method: 'PUT',
+      data: { ingredients },
+    }),
+  replaceMethods: (
+    groupId: number,
+    recipeId: number,
+    methods: Array<{
+      content: string
+      source?: 'manual' | 'ai'
+      orderIndex: number
+    }>,
+  ) =>
+    request({
+      url: `/groups/${groupId}/recipes/${recipeId}/methods`,
+      method: 'PUT',
+      data: { methods },
+    }),
+  addMethod: (groupId: number, recipeId: number, content: string) =>
+    request({
+      url: `/groups/${groupId}/recipes/${recipeId}/methods`,
       method: 'POST',
       data: { content },
     }),
-  updateMethod: (recipeId: number, methodId: number, content: string) =>
+  updateMethod: (
+    groupId: number,
+    recipeId: number,
+    methodId: number,
+    content: string,
+  ) =>
     request({
-      url: `/recipes/${recipeId}/methods/${methodId}`,
+      url: `/groups/${groupId}/recipes/${recipeId}/methods/${methodId}`,
       method: 'PUT',
       data: { content },
     }),
-  deleteMethod: (recipeId: number, methodId: number) =>
+  deleteMethod: (groupId: number, recipeId: number, methodId: number) =>
     request({
-      url: `/recipes/${recipeId}/methods/${methodId}`,
+      url: `/groups/${groupId}/recipes/${recipeId}/methods/${methodId}`,
       method: 'DELETE',
     }),
-  addAiMethods: (recipeId: number) =>
+  addAiMethods: (groupId: number, recipeId: number) =>
     request({
-      url: `/recipes/${recipeId}/ai-methods`,
+      url: `/groups/${groupId}/recipes/${recipeId}/ai-methods`,
       method: 'POST',
     }),
-};
+}
 
-// 点餐相关
 export const orderApi = {
-  create: (groupId: number, recipeId: number, servantId: number) =>
+  create: (
+    groupId: number,
+    recipeId: number,
+    assigneeId: number,
+    extra?: {
+      remark?: string
+      priority?: 'low' | 'normal' | 'high'
+      expectedAt?: string
+    },
+  ) =>
     request({
       url: '/orders',
       method: 'POST',
-      data: { groupId, recipeId, servantId },
+      data: { groupId, recipeId, assigneeId, ...extra },
     }),
-  getList: (groupId?: number, role?: 'princess' | 'servant') => {
-    const params: any = {};
-    if (groupId) params.groupId = groupId;
-    if (role) params.role = role;
-    const query = new URLSearchParams(params).toString();
-    return request({ url: `/orders${query ? `?${query}` : ''}` });
+  getList: (params?: {
+    groupId?: number
+    status?: string
+    mine?: boolean
+    role?: 'creator' | 'assignee'
+  }) => {
+    const queryParams: Record<string, string> = {}
+
+    if (params?.groupId) queryParams.groupId = String(params.groupId)
+    if (params?.status) queryParams.status = params.status
+    if (params?.mine !== undefined) queryParams.mine = String(params.mine)
+    if (params?.role) queryParams.role = params.role
+
+    const query = new URLSearchParams(queryParams).toString()
+    return request({ url: `/orders${query ? `?${query}` : ''}` })
   },
   getDetail: (id: number) => request({ url: `/orders/${id}` }),
-  start: (id: number) =>
+  accept: (id: number, remark?: string) =>
+    request({
+      url: `/orders/${id}/accept`,
+      method: 'POST',
+      data: remark ? { remark } : undefined,
+    }),
+  reject: (id: number, reason: string) =>
+    request({
+      url: `/orders/${id}/reject`,
+      method: 'POST',
+      data: { reason },
+    }),
+  start: (id: number, remark?: string) =>
     request({
       url: `/orders/${id}/start`,
-      method: 'PUT',
+      method: 'POST',
+      data: remark ? { remark } : undefined,
     }),
-  complete: (id: number) =>
+  complete: (id: number, remark?: string) =>
     request({
       url: `/orders/${id}/complete`,
-      method: 'PUT',
+      method: 'POST',
+      data: remark ? { remark } : undefined,
     }),
-};
+  confirm: (id: number, remark?: string) =>
+    request({
+      url: `/orders/${id}/confirm`,
+      method: 'POST',
+      data: remark ? { remark } : undefined,
+    }),
+  cancel: (id: number, reason?: string) =>
+    request({
+      url: `/orders/${id}/cancel`,
+      method: 'POST',
+      data: reason ? { reason } : undefined,
+    }),
+}
 
-// 标签相关
+export const messageApi = {
+  getNotifications: () => request({ url: '/messages/notifications' }),
+  retryNotification: (id: number) =>
+    request({
+      url: `/messages/notifications/${id}/retry`,
+      method: 'POST',
+    }),
+}
+
 export const tagApi = {
-  getList: (groupId: number, roleType?: 'princess' | 'servant') => {
-    const query = roleType ? `?roleType=${roleType}` : '';
-    return request({ url: `/groups/${groupId}/tags${query}` });
+  getList: (groupId: number, roleType?: 'requester' | 'cook' | 'neutral') => {
+    const query = roleType ? `?roleType=${roleType}` : ''
+    return request({ url: `/groups/${groupId}/tags${query}` })
   },
-  create: (groupId: number, name: string, roleType: 'princess' | 'servant') =>
+  create: (
+    groupId: number,
+    name: string,
+    roleType: 'requester' | 'cook' | 'neutral',
+  ) =>
     request({
       url: `/groups/${groupId}/tags`,
       method: 'POST',
       data: { name, roleType },
     }),
-  update: (id: number, name?: string, roleType?: 'princess' | 'servant') =>
+  update: (
+    groupId: number,
+    id: number,
+    data: {
+      name?: string
+      roleType?: 'requester' | 'cook' | 'neutral'
+      isDefault?: boolean
+    },
+  ) =>
     request({
-      url: `/tags/${id}`,
-      method: 'PUT',
-      data: { name, roleType },
+      url: `/groups/${groupId}/tags/${id}`,
+      method: 'PATCH',
+      data,
     }),
-  delete: (id: number) =>
+  delete: (groupId: number, id: number) =>
     request({
-      url: `/tags/${id}`,
+      url: `/groups/${groupId}/tags/${id}`,
       method: 'DELETE',
     }),
-};
-
+}

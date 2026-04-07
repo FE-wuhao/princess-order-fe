@@ -6,7 +6,7 @@ import { tagApi } from '../../services/api'
 interface Tag {
   id: number
   name: string
-  roleType: 'princess' | 'servant'
+  roleType: 'requester' | 'cook' | 'neutral'
 }
 
 export default function Tag() {
@@ -56,7 +56,11 @@ export default function Tag() {
             >
               <Text className='text-base'>{tag.name}</Text>
               <Text className='text-gray-500 text-sm'>
-                {tag.roleType === 'princess' ? '公主' : '仆人'}
+                {tag.roleType === 'requester'
+                  ? '点餐人'
+                  : tag.roleType === 'cook'
+                    ? '制作者'
+                    : '中性'}
               </Text>
             </View>
           ))}

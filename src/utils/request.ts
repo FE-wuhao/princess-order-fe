@@ -7,7 +7,7 @@ const BASE_URL = TARO_APP_API_BASE_URL;
 
 interface RequestOptions {
   url: string;
-  method?: "GET" | "POST" | "PUT" | "DELETE";
+  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   data?: any;
   header?: Record<string, string>;
 }
@@ -16,19 +16,23 @@ export const request = async <T = any>(
   options: RequestOptions
 ): Promise<T> => {
   const token = Taro.getStorageSync("token");
+  const header: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...options.header,
+  };
+
+  if (token) {
+    header.Authorization = `Bearer ${token}`;
+  }
 
   return new Promise((resolve, reject) => {
     Taro.request({
       url: `${BASE_URL}${options.url}`,
       method: options.method || "GET",
       data: options.data,
-      header: {
-        "Content-Type": "application/json",
-        Authorization: token ? `Bearer ${token}` : "",
-        ...options.header,
-      },
+      header,
       success: (res) => {
-        if (res.statusCode === 200) {
+        if (res.statusCode >= 200 && res.statusCode < 300) {
           resolve(res.data as T);
         } else if (res.statusCode === 401) {
           // 未授权，清除token并跳转到登录

@@ -1,9 +1,8 @@
 import { PropsWithChildren } from 'react'
-import './app.css'
+import './app.scss'
 
 function App({ children }: PropsWithChildren) {
   return <>{children}</>
 }
 
 export default App
-

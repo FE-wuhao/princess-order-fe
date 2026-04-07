@@ -5,7 +5,7 @@
 - Taro 3.x
 - React
 - TypeScript
-- Tailwind CSS
+- SCSS
 
 ## 开发
 
@@ -22,14 +22,12 @@ npm run build:weapp
 
 ## 样式方案
 
-项目使用 Tailwind CSS 作为样式方案，所有样式都通过 Tailwind 工具类实现。
+项目使用 SCSS 作为样式方案。当前全局样式入口是：
 
-### 自定义颜色
+- `src/app.scss`
 
-- `primary`: #ff6b9d（主题色）
+说明：
 
-### 配置文件
-
-- `tailwind.config.js`: Tailwind 配置
-- `postcss.config.js`: PostCSS 配置（包含 pxtransform 用于单位转换）
+- 小程序端已移除 Tailwind，避免生成 WXSS 不兼容的选择器和 CSS 变量。
+- 页面里暂时保留了一些类似工具类的 `className`，但这些类现在由 `src/app.scss` 手写维护，不再依赖 Tailwind 生成。
 

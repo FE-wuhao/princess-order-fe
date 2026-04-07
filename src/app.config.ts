@@ -2,8 +2,12 @@ export default {
   pages: [
     'pages/index/index',
     'pages/group/index',
+    'pages/member-form/index',
     'pages/recipe/index',
+    'pages/recipe-form/index',
     'pages/order/index',
+    'pages/task/index',
+    'pages/task-list/index',
     'pages/tag/index',
     'pages/profile/index'
   ],

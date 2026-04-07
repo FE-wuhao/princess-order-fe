@@ -7,7 +7,7 @@ export default function Order() {
   const [recipes, setRecipes] = useState<any[]>([])
   const [members, setMembers] = useState<any[]>([])
   const [selectedRecipeId, setSelectedRecipeId] = useState<number | null>(null)
-  const [selectedServantId, setSelectedServantId] = useState<number | null>(null)
+  const [selectedAssigneeId, setSelectedAssigneeId] = useState<number | null>(null)
   const [loading, setLoading] = useState(false)
 
   const groupId = useMemo(() => {
@@ -42,8 +42,8 @@ export default function Order() {
     setSelectedRecipeId(recipeId)
   }
 
-  const handleSelectServant = (servantId: number) => {
-    setSelectedServantId(servantId)
+  const handleSelectAssignee = (assigneeId: number) => {
+    setSelectedAssigneeId(assigneeId)
   }
 
   const handleSubmit = async () => {
@@ -55,9 +55,9 @@ export default function Order() {
       return
     }
 
-    if (!selectedServantId) {
+    if (!selectedAssigneeId) {
       Taro.showToast({
-        title: '请选择仆人',
+        title: '请选择执行人',
         icon: 'none',
       })
       return
@@ -65,13 +65,20 @@ export default function Order() {
 
     try {
       Taro.showLoading({ title: '提交中...' })
-      await orderApi.create(groupId, selectedRecipeId, selectedServantId)
+      const order = await orderApi.create(groupId, selectedRecipeId, selectedAssigneeId)
       Taro.hideLoading()
       Taro.showToast({
         title: '点餐成功',
         icon: 'success',
       })
       setTimeout(() => {
+        if (order?.id) {
+          Taro.redirectTo({
+            url: `/pages/task/index?id=${order.id}`,
+          })
+          return
+        }
+
         Taro.navigateBack()
       }, 1500)
     } catch (error) {
@@ -83,8 +90,8 @@ export default function Order() {
     }
   }
 
-  const servants = useMemo(() => {
-    return members.filter((m) => m.role === 'servant')
+  const assignees = useMemo(() => {
+    return members.filter((member) => member.canAcceptOrder)
   }, [members])
 
   if (loading) {
@@ -100,7 +107,7 @@ export default function Order() {
             {recipes.map((recipe) => (
               <View
                 key={recipe.id}
-                className={`p-3 border rounded mb-2-5 last-mb-0 ${
+              className={`mb-2-5 rounded border p-3 ${
                   selectedRecipeId === recipe.id
                     ? 'border-primary bg-pink-50'
                     : 'border-gray-200'
@@ -117,32 +124,34 @@ export default function Order() {
       </View>
 
       <View className='bg-white p-4 rounded-lg mb-5'>
-        <Text className='text-base font-bold mb-2-5 block'>选择仆人</Text>
-        {servants.length > 0 ? (
+        <Text className='text-base font-bold mb-2-5 block'>选择执行人</Text>
+        {assignees.length > 0 ? (
           <View>
-            {servants.map((servant) => (
+            {assignees.map((member) => (
               <View
-                key={servant.userId}
-                className={`p-3 border rounded mb-2-5 last-mb-0 ${
-                  selectedServantId === servant.userId
+                key={member.userId}
+              className={`mb-2-5 rounded border p-3 ${
+                  selectedAssigneeId === member.userId
                     ? 'border-primary bg-pink-50'
                     : 'border-gray-200'
                 }`}
-                onClick={() => handleSelectServant(servant.userId)}
+                onClick={() => handleSelectAssignee(member.userId)}
               >
-                <Text>{servant.user?.nickname || servant.tagName || '仆人'}</Text>
+                <Text>
+                  {member.user?.nickname || member.tag?.name || '执行人'}
+                </Text>
               </View>
             ))}
           </View>
         ) : (
-          <View className='text-center py-5 text-gray-500'>暂无仆人</View>
+          <View className='text-center py-5 text-gray-500'>暂无可接单成员</View>
         )}
       </View>
 
       <View className='fixed bottom-0 left-0 right-0 p-5 bg-white shadow-top'>
         <Button
           type='primary'
-          disabled={!selectedRecipeId || !selectedServantId}
+          disabled={!selectedRecipeId || !selectedAssigneeId}
           onClick={handleSubmit}
         >
           点餐

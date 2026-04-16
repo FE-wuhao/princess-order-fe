@@ -1,7 +1,6 @@
-// Taro 的 build/watch 流程会把 NODE_ENV 置为 production，不能用它判断业务环境。
-// 本地默认走 dev 配置；只有显式设置 APP_ENV=production 时才使用 prod。
+// dev:* 使用 development，build:* 使用 production。
 const config =
-  process.env.APP_ENV === "production" ? require("./prod") : require("./dev");
+  process.env.NODE_ENV === "development" ? require("./dev") : require("./prod");
 
 module.exports = {
   projectName: "princess-order-miniprogram",

@@ -513,7 +513,7 @@ export default function RecipeForm() {
         <View className='action-row'>
           {isEdit ? (
             <Button
-              className='app-button app-button--ghost'
+              className='action-row__item app-button app-button--ghost'
               disabled={saving || archiving}
               onClick={handleArchive}
             >
@@ -521,7 +521,7 @@ export default function RecipeForm() {
             </Button>
           ) : null}
           <Button
-            className='app-button app-button--primary'
+            className='action-row__item app-button app-button--primary'
             disabled={saving || archiving}
             loading={saving}
             onClick={handleSave}

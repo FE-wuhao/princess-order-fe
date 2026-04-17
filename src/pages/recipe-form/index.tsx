@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Button, Input, Picker, Text, Textarea, View } from '@tarojs/components'
 import Taro from '@tarojs/taro'
-import { recipeApi } from '../../services/api'
+import BottomActionBar from '@/components/bottom-action-bar'
+import PageHero from '@/components/page-hero'
+import SectionCard from '@/components/section-card'
+import { recipeApi } from '@/services/api'
 
 type Difficulty = 'easy' | 'normal' | 'hard'
 
@@ -55,6 +58,16 @@ export default function RecipeForm() {
     createEmptyIngredient(),
   ])
   const [methods, setMethods] = useState<RecipeMethodFormItem[]>([createEmptyMethod()])
+
+  const filledIngredientCount = useMemo(
+    () => ingredients.filter((item) => item.name.trim()).length,
+    [ingredients],
+  )
+
+  const filledMethodCount = useMemo(
+    () => methods.filter((item) => item.content.trim()).length,
+    [methods],
+  )
 
   useEffect(() => {
     if (!isEdit || !groupId) {
@@ -299,48 +312,63 @@ export default function RecipeForm() {
   }
 
   if (loading) {
-    return <View className='p-5'>加载中...</View>
+    return (
+      <View className='page-shell page-shell--sunset px-4 py-5'>
+        <Text className='block text-center text-gray-500'>加载中...</Text>
+      </View>
+    )
   }
 
   return (
-    <View className='min-h-screen bg-orange-50 px-4 py-5 pb-32'>
-      <View className='mb-4 rounded-3xl bg-white p-4 shadow-sm'>
-        <Text className='block text-xs uppercase tracking-wider text-orange-500'>
-          Recipe Studio
-        </Text>
-        <Text className='mt-2 block text-2xl font-bold text-gray-900'>
-          {isEdit ? '编辑菜谱' : '新建菜谱'}
-        </Text>
-        <Text className='mt-2 block text-sm text-gray-500'>
-          先把基础信息、食材和步骤整理好，后面发单会顺手很多。
-        </Text>
-      </View>
+    <View className='page-shell page-shell--sunset px-4 py-5 pb-32'>
+      <PageHero
+        badge='Recipe Studio'
+        title={isEdit ? '编辑菜谱' : '新建菜谱'}
+        description='先把基础信息、食材和步骤整理好，后面发单会顺手很多。'
+        tone='sunset'
+        stats={
+          <View className='hero-stat-grid'>
+            <View className='hero-stat-card'>
+              <Text className='hero-stat-card__label'>已填食材</Text>
+              <Text className='hero-stat-card__value'>{filledIngredientCount}</Text>
+              <Text className='hero-stat-card__hint'>有名称的食材会参与保存</Text>
+            </View>
+            <View className='hero-stat-card'>
+              <Text className='hero-stat-card__label'>已写步骤</Text>
+              <Text className='hero-stat-card__value'>{filledMethodCount}</Text>
+              <Text className='hero-stat-card__hint'>至少保留一条有效做法</Text>
+            </View>
+          </View>
+        }
+      />
 
-      <View className='mb-4 rounded-3xl bg-white p-4 shadow-sm'>
-        <Text className='mb-3 block text-base font-semibold text-gray-900'>基础信息</Text>
-
-        <View className='mb-4'>
-          <Text className='mb-2 block text-sm text-gray-600'>菜名</Text>
+      <SectionCard
+        title='基础信息'
+        description='菜名和描述会出现在发单和任务详情里，尽量写清楚一点。'
+        variant='accent'
+      >
+        <View className='form-field'>
+          <Text className='form-label'>菜名</Text>
           <Input
-            className='rounded-2xl bg-gray-50 px-4 py-3'
+            className='form-control'
             placeholder='比如：番茄滑蛋'
             value={name}
             onInput={(event) => setName(event.detail.value)}
           />
         </View>
 
-        <View className='mb-4'>
-          <Text className='mb-2 block text-sm text-gray-600'>一句话描述</Text>
+        <View className='form-field'>
+          <Text className='form-label'>一句话描述</Text>
           <Textarea
-            className='h-24 rounded-2xl bg-gray-50 px-4 py-3'
+            className='form-control form-control--textarea'
             placeholder='写一点口味、场景或提醒，比如下饭、十分钟快手菜'
             value={description}
             onInput={(event) => setDescription(event.detail.value)}
           />
         </View>
 
-        <View className='mb-4'>
-          <Text className='mb-2 block text-sm text-gray-600'>难度</Text>
+        <View className='form-field'>
+          <Text className='form-label'>难度</Text>
           <Picker
             mode='selector'
             range={difficultyOptions.map((item) => item.label)}
@@ -354,27 +382,30 @@ export default function RecipeForm() {
               setDifficulty(selected.value)
             }}
           >
-            <View className='rounded-2xl bg-gray-50 px-4 py-3 text-sm text-gray-900'>
-              {difficultyOptions.find((item) => item.value === difficulty)?.label || '选择难度'}
+            <View className='form-picker'>
+              <Text className='form-picker__value'>
+                {difficultyOptions.find((item) => item.value === difficulty)?.label ||
+                  '选择难度'}
+              </Text>
             </View>
           </Picker>
         </View>
 
         <View className='grid grid-cols-2 gap-3'>
-          <View>
-            <Text className='mb-2 block text-sm text-gray-600'>预计时长（分钟）</Text>
+          <View className='form-field'>
+            <Text className='form-label'>预计时长（分钟）</Text>
             <Input
-              className='rounded-2xl bg-gray-50 px-4 py-3'
+              className='form-control'
               type='number'
               placeholder='20'
               value={estimatedMinutes}
               onInput={(event) => setEstimatedMinutes(event.detail.value)}
             />
           </View>
-          <View>
-            <Text className='mb-2 block text-sm text-gray-600'>适合人数</Text>
+          <View className='form-field'>
+            <Text className='form-label'>适合人数</Text>
             <Input
-              className='rounded-2xl bg-gray-50 px-4 py-3'
+              className='form-control'
               type='number'
               placeholder='2'
               value={servingSize}
@@ -382,25 +413,28 @@ export default function RecipeForm() {
             />
           </View>
         </View>
-      </View>
+      </SectionCard>
 
-      <View className='mb-4 rounded-3xl bg-white p-4 shadow-sm'>
-        <View className='mb-3 flex items-center justify-between'>
-          <Text className='text-base font-semibold text-gray-900'>食材</Text>
-          <Button size='mini' onClick={appendIngredient}>
+      <SectionCard
+        title='食材'
+        description='按行填写，没有名称的行不会保存。'
+        actions={
+          <Button className='app-button app-button--secondary app-button--mini' onClick={appendIngredient}>
             新增食材
           </Button>
-        </View>
-
+        }
+        meta={`${ingredients.length} 行`}
+        variant='soft'
+      >
         {ingredients.map((ingredient, index) => (
           <View
             key={`ingredient-${index}`}
-            className='mb-3 rounded-2xl bg-orange-50 p-3'
+            className='feature-list-card feature-list-card--amber mb-3'
           >
-            <View className='mb-3'>
-              <Text className='mb-2 block text-sm text-gray-600'>食材名</Text>
+            <View className='form-field'>
+              <Text className='form-label'>食材名</Text>
               <Input
-                className='rounded-2xl bg-white px-4 py-3'
+                className='form-control form-control--on-tint'
                 placeholder='比如：番茄'
                 value={ingredient.name}
                 onInput={(event) =>
@@ -410,10 +444,10 @@ export default function RecipeForm() {
             </View>
 
             <View className='grid grid-cols-2 gap-3'>
-              <View>
-                <Text className='mb-2 block text-sm text-gray-600'>数量</Text>
+              <View className='form-field'>
+                <Text className='form-label'>数量</Text>
                 <Input
-                  className='rounded-2xl bg-white px-4 py-3'
+                  className='form-control form-control--on-tint'
                   placeholder='2'
                   value={ingredient.amount}
                   onInput={(event) =>
@@ -421,10 +455,10 @@ export default function RecipeForm() {
                   }
                 />
               </View>
-              <View>
-                <Text className='mb-2 block text-sm text-gray-600'>单位</Text>
+              <View className='form-field'>
+                <Text className='form-label'>单位</Text>
                 <Input
-                  className='rounded-2xl bg-white px-4 py-3'
+                  className='form-control form-control--on-tint'
                   placeholder='个 / 克 / 勺'
                   value={ingredient.unit}
                   onInput={(event) =>
@@ -434,56 +468,52 @@ export default function RecipeForm() {
               </View>
             </View>
 
-            <View className='mt-3 text-right'>
-              <Text
-                className='text-sm text-gray-500'
-                onClick={() => removeIngredient(index)}
-              >
+            <View className='mt-2 text-right'>
+              <Text className='form-text-link' onClick={() => removeIngredient(index)}>
                 删除这项
               </Text>
             </View>
           </View>
         ))}
-      </View>
+      </SectionCard>
 
-      <View className='rounded-3xl bg-white p-4 shadow-sm'>
-        <View className='mb-3 flex items-center justify-between'>
-          <Text className='text-base font-semibold text-gray-900'>做法</Text>
-          <Button size='mini' onClick={appendMethod}>
+      <SectionCard
+        title='做法'
+        description='步骤尽量一句一事，执行人看起来更轻松。'
+        actions={
+          <Button className='app-button app-button--secondary app-button--mini' onClick={appendMethod}>
             新增步骤
           </Button>
-        </View>
-
+        }
+        meta={`${methods.length} 步`}
+      >
         {methods.map((method, index) => (
           <View
             key={`method-${index}`}
-            className='mb-3 rounded-2xl bg-amber-50 p-3'
+            className='feature-list-card feature-list-card--rose mb-3'
           >
-            <View className='mb-3 flex items-center justify-between'>
-              <Text className='text-sm font-medium text-gray-900'>步骤 {index + 1}</Text>
-              <Text
-                className='text-sm text-gray-500'
-                onClick={() => removeMethod(index)}
-              >
+            <View className='form-dynamic-head'>
+              <Text className='feature-list-card__title'>步骤 {index + 1}</Text>
+              <Text className='form-text-link' onClick={() => removeMethod(index)}>
                 删除
               </Text>
             </View>
 
             <Textarea
-              className='h-28 rounded-2xl bg-white px-4 py-3'
+              className='form-control form-control--textarea-lg form-control--on-tint'
               placeholder='写清楚这个步骤做什么'
               value={method.content}
               onInput={(event) => updateMethod(index, 'content', event.detail.value)}
             />
           </View>
         ))}
-      </View>
+      </SectionCard>
 
-      <View className='fixed bottom-0 left-0 right-0 bg-white px-5 py-4 shadow-lg'>
-        <View className='flex items-center gap-3'>
+      <BottomActionBar>
+        <View className='action-row'>
           {isEdit ? (
             <Button
-              className='m-0 flex-1'
+              className='app-button app-button--ghost'
               disabled={saving || archiving}
               onClick={handleArchive}
             >
@@ -491,15 +521,15 @@ export default function RecipeForm() {
             </Button>
           ) : null}
           <Button
-            className='m-0 flex-1'
-            type='primary'
+            className='app-button app-button--primary'
             disabled={saving || archiving}
+            loading={saving}
             onClick={handleSave}
           >
             {isEdit ? '保存菜谱' : '创建菜谱'}
           </Button>
         </View>
-      </View>
+      </BottomActionBar>
     </View>
   )
 }

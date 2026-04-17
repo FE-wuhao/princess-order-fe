@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Button, Text, View } from '@tarojs/components'
 import Taro from '@tarojs/taro'
-import { groupApi } from '../../services/api'
+import BottomActionBar from '@/components/bottom-action-bar'
+import EmptyState from '@/components/empty-state'
+import PageHero from '@/components/page-hero'
+import SectionCard from '@/components/section-card'
+import { groupApi } from '@/services/api'
 
 interface GroupMember {
   id: number
@@ -170,126 +174,133 @@ export default function Group() {
   }
 
   return (
-    <View className='min-h-screen bg-amber-50 px-4 py-5 pb-28'>
-      <View className='mb-5 rounded-3xl bg-gradient-to-br from-amber-100 via-rose-100 to-white p-5 shadow-sm'>
-        <Text className='block text-xs uppercase tracking-wider text-amber-700'>
-          Group Space
-        </Text>
-        <Text className='mt-2 block text-2xl font-bold text-gray-900'>
-          {group.name}
-        </Text>
-        <Text className='mt-2 block text-sm text-gray-600'>
-          成员 {group.members?.length || 0} 人 / 可用菜谱 {activeRecipes.length} 个 /
-          可接单成员 {orderableMembers.length} 人
-        </Text>
-      </View>
+    <View className='page-shell page-shell--sunset px-4 py-5 pb-32'>
+      <PageHero
+        badge='Group Space'
+        title={group.name}
+        description={`成员 ${group.members?.length || 0} 人，可用菜谱 ${activeRecipes.length} 个，可接单成员 ${orderableMembers.length} 人。`}
+        tone='sunset'
+        stats={
+          <View className='hero-stat-grid'>
+            <View className='hero-stat-card'>
+              <Text className='hero-stat-card__label'>协作成员</Text>
+              <Text className='hero-stat-card__value'>{group.members?.length || 0}</Text>
+              <Text className='hero-stat-card__hint'>按角色管理发单和接单权限</Text>
+            </View>
+            <View className='hero-stat-card'>
+              <Text className='hero-stat-card__label'>可用菜谱</Text>
+              <Text className='hero-stat-card__value'>{activeRecipes.length}</Text>
+              <Text className='hero-stat-card__hint'>常做菜集中沉淀，发单更快</Text>
+            </View>
+          </View>
+        }
+      />
 
-      <View className='mb-5 rounded-3xl bg-white p-4 shadow-sm'>
-        <View className='mb-3 flex items-center justify-between'>
-          <Text className='text-lg font-semibold text-gray-900'>加入方式</Text>
-          <Button size='mini' onClick={handleRefreshInviteCode}>
+      <SectionCard
+        title='加入方式'
+        description='邀请码是这个分组最重要的外部入口，单独做成重点模块。'
+        actions={
+          <Button className='app-button app-button--secondary app-button--mini' onClick={handleRefreshInviteCode}>
             刷新邀请码
           </Button>
-        </View>
-        <View className='rounded-2xl bg-amber-50 px-4 py-4'>
-          <Text className='block text-xs uppercase tracking-wider text-amber-700'>
-            Invite Code
-          </Text>
-          <Text className='mt-2 block text-2xl font-bold tracking-widest text-gray-900'>
-            {group.inviteCode || '暂未生成'}
-          </Text>
-          <Text className='mt-2 block text-xs text-gray-500'>
+        }
+        variant='accent'
+      >
+        <View className='feature-list-card feature-list-card--amber'>
+          <Text className='feature-list-card__meta'>Invite Code</Text>
+          <Text className='page-hero__title'>{group.inviteCode || '暂未生成'}</Text>
+          <Text className='feature-list-card__description'>
             {group.inviteExpiredAt
               ? `有效期至 ${group.inviteExpiredAt}`
-              : '刷新一次就会生成新的邀请码'}
+              : '刷新一次就会生成新的邀请码，适合分享给新成员。'}
           </Text>
           <View className='mt-3'>
-            <Button size='mini' onClick={handleCopyInviteCode}>
+            <Button className='app-button app-button--ghost app-button--mini' onClick={handleCopyInviteCode}>
               复制邀请码
             </Button>
           </View>
         </View>
-      </View>
+      </SectionCard>
 
-      <View className='mb-5 rounded-3xl bg-white p-4 shadow-sm'>
-        <View className='mb-3 flex items-center justify-between'>
-          <Text className='text-lg font-semibold text-gray-900'>成员与角色</Text>
-          <Button size='mini' onClick={handleTagClick}>
-            标签
+      <SectionCard
+        title='成员与角色'
+        description='把可发单、可接单和角色信息放在同一块，方便快速调整。'
+        actions={
+          <Button className='app-button app-button--ghost app-button--mini' onClick={handleTagClick}>
+            标签管理
           </Button>
-        </View>
-
+        }
+      >
         <View>
           {group.members?.map((member) => (
             <View
               key={member.id}
-              className='mb-3 rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3'
+              className='feature-list-card feature-list-card--rose'
               onClick={() => handleMemberClick(member.id)}
             >
               <View className='flex items-center justify-between'>
-                <Text className='text-base font-medium text-gray-900'>
+                <Text className='feature-list-card__title'>
                   {member.user?.nickname || member.tag?.name || '未命名成员'}
                 </Text>
-                <Text className='rounded-full bg-white px-2 py-1 text-xs text-amber-700'>
+                <Text className='tool-pill'>
                   {member.displayRole ? roleLabelMap[member.displayRole] : '未定义'}
                 </Text>
               </View>
-              <Text className='mt-2 block text-xs text-gray-500'>
+              <Text className='feature-list-card__description'>
                 {member.canCreateOrder ? '可发单' : '不可发单'} /{' '}
                 {member.canAcceptOrder ? '可接单' : '不可接单'}
               </Text>
-              <Text className='mt-1 block text-xs text-amber-700'>
-                点击调整角色和权限
-              </Text>
+              <Text className='feature-list-card__meta'>点击调整角色、权限和标签归属</Text>
             </View>
           ))}
         </View>
-      </View>
+      </SectionCard>
 
-      <View className='rounded-3xl bg-white p-4 shadow-sm'>
-        <View className='mb-3 flex items-center justify-between'>
-          <Text className='text-lg font-semibold text-gray-900'>菜谱库</Text>
-          <View className='flex items-center gap-2'>
-            <Text className='text-xs text-gray-500'>{activeRecipes.length} 个可用</Text>
-            <Button size='mini' onClick={handleCreateRecipe}>
-              新建
-            </Button>
-          </View>
-        </View>
-
+      <SectionCard
+        title='菜谱库'
+        description='让菜谱区域更像内容资产库，而不是普通列表。'
+        actions={
+          <Button className='app-button app-button--primary app-button--mini' onClick={handleCreateRecipe}>
+            新建菜谱
+          </Button>
+        }
+        meta={`${activeRecipes.length} 个可用`}
+        variant='soft'
+      >
         {activeRecipes.length > 0 ? (
           <View>
             {activeRecipes.map((recipe) => (
               <View
                 key={recipe.id}
-                className='rounded-2xl border border-gray-100 px-4 py-4'
+                className='feature-list-card feature-list-card--sky'
                 onClick={() => handleRecipeClick(recipe.id)}
               >
-                <Text className='block text-base font-medium text-gray-900'>
-                  {recipe.name}
-                </Text>
-                <Text className='mt-1 block text-xs text-gray-500'>
+                <Text className='feature-list-card__title'>{recipe.name}</Text>
+                <Text className='feature-list-card__description'>
                   {recipe.description || '进入查看做法、食材和 AI 补全结果'}
                 </Text>
+                <Text className='feature-list-card__meta'>点进详情继续编辑和发起点餐</Text>
               </View>
             ))}
           </View>
         ) : (
-          <View className='rounded-2xl bg-gray-50 px-4 py-6 text-center text-sm text-gray-500'>
-            暂无菜谱，建议先补一个常做菜，再发起任务。
-          </View>
+          <EmptyState
+            tone='amber'
+            title='暂无菜谱'
+            description='建议先补一个常做菜，再发起任务，整个分组的协作效率会更高。'
+          />
         )}
-      </View>
+      </SectionCard>
 
-      <View className='fixed bottom-0 left-0 right-0 bg-white px-5 py-4 shadow-lg'>
+      <BottomActionBar>
         <Button
-          type='primary'
+          className='app-button app-button--primary'
           disabled={activeRecipes.length === 0 || orderableMembers.length === 0}
           onClick={handleOrderClick}
         >
           发起点餐任务
         </Button>
-      </View>
+      </BottomActionBar>
     </View>
   )
 }

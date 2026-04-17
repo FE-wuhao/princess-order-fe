@@ -1,7 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Button, View, Text } from '@tarojs/components'
 import Taro, { useDidShow } from '@tarojs/taro'
-import { groupApi, messageApi, userApi } from '../../services/api'
+import EmptyState from '@/components/empty-state'
+import PageHero from '@/components/page-hero'
+import SectionCard from '@/components/section-card'
+import StatusChip from '@/components/status-chip'
+import { NotificationStatus, notificationStatusMetaMap, notificationTitleMap } from '@/constants/ui'
+import { groupApi, messageApi, userApi } from '@/services/api'
 
 interface NotificationItem {
   id: number
@@ -10,20 +15,6 @@ interface NotificationItem {
   templateCode: string
   createdAt?: string
   errorMessage?: string | null
-}
-
-const notificationTitleMap: Record<NotificationItem['bizType'], string> = {
-  order_created: '发单通知',
-  order_accepted: '接单通知',
-  order_rejected: '拒单通知',
-  order_completed: '完成通知',
-  order_expired: '超时通知',
-}
-
-const notificationToneMap: Record<NotificationItem['status'], string> = {
-  pending: 'bg-amber-100 text-amber-700',
-  success: 'bg-emerald-100 text-emerald-700',
-  failed: 'bg-rose-100 text-rose-700',
 }
 
 export default function Profile() {
@@ -98,78 +89,84 @@ export default function Profile() {
   }
 
   if (loading) {
-    return <View className='p-5'>加载中...</View>
+    return (
+      <View className='page-shell page-shell--sky px-4 py-5'>
+        <Text className='block text-center text-gray-500'>加载中...</Text>
+      </View>
+    )
   }
 
   return (
-    <View className='min-h-screen bg-gray-100 p-5'>
-      <View className='mb-5 rounded-3xl bg-gradient-to-br from-slate-200 via-white to-cyan-100 p-5 shadow-sm'>
-        <Text className='text-xl font-bold'>个人中心</Text>
-        <Text className='mt-2 block text-sm text-gray-600'>
-          这里放加入分组的入口，也能顺手看看最近通知有没有发成功。
-        </Text>
-      </View>
+    <View className='page-shell page-shell--sky px-4 py-5'>
+      <PageHero
+        badge='Profile'
+        title={user?.nickname || '个人中心'}
+        description='加入分组入口与最近通知都在这里，方便随时确认协作状态。'
+        tone='sky'
+        stats={
+          <View className='hero-stat-grid'>
+            <View className='hero-stat-card'>
+              <Text className='hero-stat-card__label'>最近通知</Text>
+              <Text className='hero-stat-card__value'>{notifications.length}</Text>
+              <Text className='hero-stat-card__hint'>默认展示最近 20 条</Text>
+            </View>
+            <View className='hero-stat-card'>
+              <Text className='hero-stat-card__label'>账号状态</Text>
+              <Text className='hero-stat-card__value'>{user ? '已登录' : '未登录'}</Text>
+              <Text className='hero-stat-card__hint'>登录后可加入分组并接单</Text>
+            </View>
+          </View>
+        }
+      />
 
-      {user && (
-        <View className='mb-5 rounded-3xl bg-white p-5 shadow-sm'>
-          <Text className='text-base'>{user.nickname || '未设置昵称'}</Text>
-        </View>
-      )}
-
-      <View className='mb-5 rounded-3xl bg-white p-5 shadow-sm'>
-        <View className='mb-3 flex items-center justify-between'>
-          <Text className='text-lg font-semibold text-gray-900'>加入分组</Text>
-          <Button size='mini' type='primary' onClick={handleJoinGroup}>
+      <SectionCard
+        title='加入分组'
+        description='向群主拿到邀请码后，直接在这里加入对应分组。'
+        actions={
+          <Button className='app-button app-button--primary app-button--mini' onClick={handleJoinGroup}>
             输入邀请码
           </Button>
+        }
+        variant='accent'
+      >
+        <View className='feature-list-card feature-list-card--sky'>
+          <Text className='feature-list-card__title'>通过邀请码加入</Text>
+          <Text className='feature-list-card__description'>
+            加入成功后回到首页或分组页刷新，就能看到新空间。
+          </Text>
+          <Text className='feature-list-card__meta'>邀请码通常是 6 位大写字母数字组合</Text>
         </View>
-        <Text className='text-sm text-gray-500'>
-          向群主拿到邀请码之后，直接在这里加入对应分组。
-        </Text>
-      </View>
+      </SectionCard>
 
-      <View className='rounded-3xl bg-white p-5 shadow-sm'>
-        <View className='mb-3 flex items-center justify-between'>
-          <Text className='text-lg font-semibold text-gray-900'>最近通知</Text>
-          <Text className='text-xs text-gray-500'>最近 20 条</Text>
-        </View>
+      <SectionCard
+        title='最近通知'
+        description='通知记录能帮助你确认发单、接单、完成等关键节点是否推送成功。'
+        meta='最近 20 条'
+        variant='soft'
+      >
         {notifications.length === 0 ? (
-          <View className='rounded-2xl bg-gray-50 px-4 py-6 text-center text-sm text-gray-500'>
-            还没有通知记录。
-          </View>
+          <EmptyState tone='gray' title='还没有通知记录' description='当系统尝试发送通知后，这里会自动出现记录。' />
         ) : (
-            <View>
+          <View>
             {notifications.map((item) => (
-              <View
-                key={item.id}
-                  className='mb-3 rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3'
-              >
+              <View key={item.id} className='feature-list-card'>
                 <View className='mb-2 flex items-center justify-between'>
-                  <Text className='text-base font-medium text-gray-900'>
-                    {notificationTitleMap[item.bizType]}
-                  </Text>
-                  <Text
-                    className={`rounded-full px-2 py-1 text-xs ${notificationToneMap[item.status]}`}
-                  >
-                    {item.status}
-                  </Text>
+                  <Text className='feature-list-card__title'>{notificationTitleMap[item.bizType]}</Text>
+                  <StatusChip
+                    label={notificationStatusMetaMap[item.status as NotificationStatus].label}
+                    tone={notificationStatusMetaMap[item.status as NotificationStatus].tone}
+                  />
                 </View>
-                <Text className='block text-xs text-gray-500'>
-                  模板：{item.templateCode}
-                </Text>
-                <Text className='mt-1 block text-xs text-gray-500'>
-                  时间：{item.createdAt || '暂无'}
-                </Text>
+                <Text className='feature-list-card__meta'>模板：{item.templateCode}</Text>
+                <Text className='feature-list-card__meta'>时间：{item.createdAt || '暂无'}</Text>
                 {item.errorMessage ? (
-                  <Text className='mt-2 block text-xs text-rose-500'>
-                    错误：{item.errorMessage}
-                  </Text>
+                  <Text className='mt-2 block text-sm text-rose-500'>错误：{item.errorMessage}</Text>
                 ) : null}
               </View>
             ))}
           </View>
         )}
-      </View>
+      </SectionCard>
     </View>
   )
 }

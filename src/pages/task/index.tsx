@@ -1,7 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Button, Text, View } from '@tarojs/components'
 import Taro from '@tarojs/taro'
-import { messageApi, orderApi, userApi } from '../../services/api'
+import BottomActionBar from '@/components/bottom-action-bar'
+import EmptyState from '@/components/empty-state'
+import SectionCard from '@/components/section-card'
+import StatusChip from '@/components/status-chip'
+import {
+  NotificationStatus,
+  notificationStatusMetaMap,
+  notificationTitleMap,
+  orderStatusMetaMap,
+} from '@/constants/ui'
+import { messageApi, orderApi, userApi } from '@/services/api'
 
 interface UserSummary {
   id: number
@@ -70,28 +80,6 @@ interface OrderDetail {
   }>
 }
 
-const statusLabelMap: Record<OrderDetail['status'], string> = {
-  created: '待响应',
-  accepted: '已接单',
-  rejected: '已拒绝',
-  cooking: '制作中',
-  completed: '待确认',
-  confirmed: '已完成',
-  cancelled: '已取消',
-  expired: '已超时',
-}
-
-const statusToneMap: Record<OrderDetail['status'], string> = {
-  created: 'bg-amber-100 text-amber-700',
-  accepted: 'bg-sky-100 text-sky-700',
-  rejected: 'bg-rose-100 text-rose-700',
-  cooking: 'bg-blue-100 text-blue-700',
-  completed: 'bg-emerald-100 text-emerald-700',
-  confirmed: 'bg-green-100 text-green-700',
-  cancelled: 'bg-gray-200 text-gray-600',
-  expired: 'bg-orange-100 text-orange-700',
-}
-
 const eventLabelMap: Record<NonNullable<OrderDetail['events']>[number]['eventType'], string> = {
   created: '创建任务',
   accepted: '接受任务',
@@ -101,26 +89,6 @@ const eventLabelMap: Record<NonNullable<OrderDetail['events']>[number]['eventTyp
   confirmed: '确认完成',
   cancelled: '取消任务',
   expired: '任务超时',
-}
-
-const notificationTitleMap: Record<
-  NonNullable<OrderDetail['notificationLogs']>[number]['bizType'],
-  string
-> = {
-  order_created: '发单通知',
-  order_accepted: '接单通知',
-  order_rejected: '拒单通知',
-  order_completed: '完成通知',
-  order_expired: '超时通知',
-}
-
-const notificationToneMap: Record<
-  NonNullable<OrderDetail['notificationLogs']>[number]['status'],
-  string
-> = {
-  pending: 'bg-amber-100 text-amber-700',
-  success: 'bg-emerald-100 text-emerald-700',
-  failed: 'bg-rose-100 text-rose-700',
 }
 
 export default function Task() {
@@ -303,16 +271,16 @@ export default function Task() {
     return <View className='p-5'>任务不存在</View>
   }
 
+  const orderStatusMeta = orderStatusMetaMap[order.status]
+
   return (
-    <View className='min-h-screen bg-sky-50 px-4 py-5 pb-28'>
-      <View className='mb-5 rounded-3xl bg-white p-5 shadow-sm'>
+    <View className='page-shell page-shell--sky px-4 py-5 pb-32'>
+      <View className='section-card section-card--accent'>
         <View className='mb-3 flex items-center justify-between'>
           <Text className='text-xl font-bold text-gray-900'>
             {order.recipe?.name || `任务 #${order.id}`}
           </Text>
-          <Text className={`rounded-full px-3 py-1 text-xs ${statusToneMap[order.status]}`}>
-            {statusLabelMap[order.status]}
-          </Text>
+          <StatusChip label={orderStatusMeta.label} tone={orderStatusMeta.tone} size='md' />
         </View>
         <Text className='block text-sm text-gray-600'>
           分组：{order.group?.name || '未命名分组'}
@@ -353,12 +321,14 @@ export default function Task() {
         ) : null}
       </View>
 
-      <View className='rounded-3xl bg-white p-4 shadow-sm'>
-        <Text className='mb-3 block text-lg font-semibold text-gray-900'>任务时间线</Text>
+      <SectionCard
+        title='任务时间线'
+        description='把关键动作和备注按顺序收好，方便快速回顾整笔任务。'
+      >
         {order.events && order.events.length > 0 ? (
           <View>
             {order.events.map((event) => (
-              <View key={event.id} className='mb-3 rounded-2xl bg-gray-50 px-4 py-3'>
+              <View key={event.id} className='feature-list-card feature-list-card--sky'>
                 <View className='flex items-center justify-between'>
                   <Text className='text-sm font-medium text-gray-900'>
                     {eventLabelMap[event.eventType]}
@@ -389,27 +359,31 @@ export default function Task() {
             ))}
           </View>
         ) : (
-          <View className='rounded-2xl bg-gray-50 px-4 py-6 text-center text-sm text-gray-500'>
-            暂无事件记录。
-          </View>
+          <EmptyState
+            tone='sky'
+            title='暂无事件记录'
+            description='任务时间线会在有人接单、开始制作、完成或确认后自动补齐。'
+          />
         )}
-      </View>
+      </SectionCard>
 
-      <View className='mt-5 rounded-3xl bg-white p-4 shadow-sm'>
-        <Text className='mb-3 block text-lg font-semibold text-gray-900'>通知记录</Text>
+      <SectionCard
+        title='通知记录'
+        description='系统通知的发送状态、模板和异常信息都在这里查看。'
+        variant='soft'
+      >
         {order.notificationLogs && order.notificationLogs.length > 0 ? (
           <View>
             {order.notificationLogs.map((log) => (
-              <View key={log.id} className='mb-3 rounded-2xl bg-gray-50 px-4 py-3'>
+              <View key={log.id} className='feature-list-card'>
                 <View className='flex items-center justify-between'>
                   <Text className='text-sm font-medium text-gray-900'>
                     {notificationTitleMap[log.bizType]}
                   </Text>
-                  <Text
-                    className={`rounded-full px-2 py-1 text-xs ${notificationToneMap[log.status]}`}
-                  >
-                    {log.status}
-                  </Text>
+                  <StatusChip
+                    label={notificationStatusMetaMap[log.status as NotificationStatus].label}
+                    tone={notificationStatusMetaMap[log.status as NotificationStatus].tone}
+                  />
                 </View>
                 <Text className='mt-1 block text-xs text-gray-500'>
                   模板：{log.templateCode}
@@ -425,7 +399,7 @@ export default function Task() {
                 {log.status === 'failed' ? (
                   <View className='mt-3'>
                     <Button
-                      size='mini'
+                      className='app-button app-button--warn app-button--mini'
                       disabled={retryingLogId === log.id}
                       onClick={() => handleRetryNotification(log.id)}
                     >
@@ -437,19 +411,27 @@ export default function Task() {
             ))}
           </View>
         ) : (
-          <View className='rounded-2xl bg-gray-50 px-4 py-6 text-center text-sm text-gray-500'>
-            这笔任务还没有通知记录。
-          </View>
+          <EmptyState
+            tone='gray'
+            title='还没有通知记录'
+            description='当系统尝试发送发单、接单、完成或超时通知时，这里会自动出现记录。'
+          />
         )}
-      </View>
+      </SectionCard>
 
       {actionButtons.length > 0 ? (
-      <View className='fixed bottom-0 left-0 right-0 bg-white px-5 py-4 shadow-lg'>
-          <View>
+        <BottomActionBar>
+          <View className='action-stack'>
             {actionButtons.map((action) => (
               <Button
                 key={action.key}
-                type={action.type || 'default'}
+                className={`app-button ${
+                  action.type === 'primary'
+                    ? 'app-button--primary'
+                    : action.type === 'warn'
+                    ? 'app-button--warn'
+                    : 'app-button--ghost'
+                }`}
                 disabled={acting}
                 onClick={action.onClick}
               >
@@ -457,7 +439,7 @@ export default function Task() {
               </Button>
             ))}
           </View>
-        </View>
+        </BottomActionBar>
       ) : null}
     </View>
   )

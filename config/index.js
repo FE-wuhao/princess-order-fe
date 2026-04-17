@@ -1,3 +1,5 @@
+const path = require("path");
+
 // dev:* 使用 development，build:* 使用 production。
 const config =
   process.env.NODE_ENV === "development" ? require("./dev") : require("./prod");
@@ -25,7 +27,9 @@ module.exports = {
   cache: {
     enable: false,
   },
-  alias: {},
+  alias: {
+    "@": path.resolve(__dirname, "..", "src"),
+  },
   env: config.env || {},
   mini: {
     runtime: {

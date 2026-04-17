@@ -1,8 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Button, Text, View } from '@tarojs/components'
 import Taro, { useDidShow } from '@tarojs/taro'
-import { groupApi, orderApi } from '../../services/api'
-import { checkAuth, wxLogin } from '../../utils/auth'
+import EmptyState from '@/components/empty-state'
+import PageHero from '@/components/page-hero'
+import SectionCard from '@/components/section-card'
+import StatusChip from '@/components/status-chip'
+import { orderStatusMetaMap } from '@/constants/ui'
+import { groupApi, orderApi } from '@/services/api'
+import { checkAuth, wxLogin } from '@/utils/auth'
 
 interface GroupItem {
   id: number
@@ -11,15 +16,7 @@ interface GroupItem {
 
 interface OrderItem {
   id: number
-  status:
-    | 'created'
-    | 'accepted'
-    | 'rejected'
-    | 'cooking'
-    | 'completed'
-    | 'confirmed'
-    | 'cancelled'
-    | 'expired'
+  status: keyof typeof orderStatusMetaMap
   recipe?: {
     id: number
     name: string
@@ -36,28 +33,6 @@ interface OrderItem {
     id: number
     nickname?: string
   }
-}
-
-const statusLabelMap: Record<OrderItem['status'], string> = {
-  created: '待响应',
-  accepted: '已接单',
-  rejected: '已拒绝',
-  cooking: '制作中',
-  completed: '待确认',
-  confirmed: '已完成',
-  cancelled: '已取消',
-  expired: '已超时',
-}
-
-const statusToneMap: Record<OrderItem['status'], string> = {
-  created: 'bg-amber-100 text-amber-700',
-  accepted: 'bg-sky-100 text-sky-700',
-  rejected: 'bg-rose-100 text-rose-700',
-  cooking: 'bg-blue-100 text-blue-700',
-  completed: 'bg-emerald-100 text-emerald-700',
-  confirmed: 'bg-green-100 text-green-700',
-  cancelled: 'bg-gray-200 text-gray-600',
-  expired: 'bg-orange-100 text-orange-700',
 }
 
 export default function Index() {
@@ -187,109 +162,117 @@ export default function Index() {
   }
 
   return (
-    <View className='min-h-screen bg-rose-50 px-4 py-5'>
-      <View className='mb-5 rounded-3xl bg-gradient-to-br from-rose-200 via-pink-100 to-amber-100 p-5 shadow-sm'>
-        <Text className='block text-xs uppercase tracking-widest text-rose-700'>
-          Princess Order
-        </Text>
-        <Text className='mt-2 block text-2xl font-bold text-gray-900'>
-          今日点餐看板
-        </Text>
-        <Text className='mt-2 block text-sm leading-6 text-gray-700'>
-          先看正在推进的任务，再进入你的分组和菜谱。
-        </Text>
-          <View className='mt-4 flex items-center justify-between rounded-2xl bg-white px-4 py-3'>
-          <View>
-            <Text className='block text-xs text-gray-500'>待跟进任务</Text>
-            <Text className='block text-xl font-semibold text-gray-900'>
-              {pendingOrders.length}
-            </Text>
+    <View className='page-shell px-4 py-5'>
+      <PageHero
+        badge='Princess Order'
+        title='今天吃什么，先把节奏理顺'
+        description='首页只保留决策入口：先看待推进的任务，再进入你的空间继续发单、接单和协作。'
+        stats={
+          <View className='hero-stat-grid'>
+            <View className='hero-stat-card'>
+              <Text className='hero-stat-card__label'>待跟进任务</Text>
+              <Text className='hero-stat-card__value'>{pendingOrders.length}</Text>
+              <Text className='hero-stat-card__hint'>优先处理正在推进中的单</Text>
+            </View>
+            <View className='hero-stat-card'>
+              <Text className='hero-stat-card__label'>我的分组</Text>
+              <Text className='hero-stat-card__value'>{groups.length}</Text>
+              <Text className='hero-stat-card__hint'>每个分组都是一套协作厨房</Text>
+            </View>
           </View>
-          <Button size='mini' type='primary' onClick={handleCreateGroup}>
+        }
+        actions={
+          <Button className='app-button app-button--primary' onClick={handleCreateGroup}>
             新建分组
           </Button>
-        </View>
-      </View>
+        }
+      />
 
-      <View className='mb-5 rounded-3xl bg-white p-4 shadow-sm'>
-        <View className='mb-3 flex items-center justify-between'>
-          <Text className='text-lg font-semibold text-gray-900'>我的任务</Text>
-          <Text className='text-xs text-sky-600' onClick={handleTaskBoardClick}>
+      <SectionCard
+        title='我的任务'
+        description='只保留最近的关键任务，避免首页沦为任务列表的缩略版。'
+        actions={
+          <Button className='app-button app-button--ghost app-button--mini' onClick={handleTaskBoardClick}>
             查看全部
-          </Text>
-        </View>
-
+          </Button>
+        }
+        variant='accent'
+      >
         {loading ? (
           <View className='py-8 text-center text-gray-500'>加载中...</View>
         ) : recentOrders.length === 0 ? (
-          <View className='rounded-2xl bg-rose-50 px-4 py-6 text-center text-sm text-gray-500'>
-            还没有任务，去分组里发起第一单吧。
-          </View>
+          <EmptyState
+            tone='rose'
+            title='还没有任务'
+            description='去分组里发起第一单，把今天想吃的安排起来。'
+          />
         ) : (
           <View>
-            {recentOrders.map((order) => (
-              <View
-                key={order.id}
-                  className='mb-3 rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3'
-                onClick={() => handleOrderClick(order)}
-              >
-                <View className='mb-2 flex items-center justify-between'>
-                  <Text className='text-base font-medium text-gray-900'>
-                    {order.recipe?.name || `任务 #${order.id}`}
+            {recentOrders.map((order) => {
+              const statusMeta = orderStatusMetaMap[order.status]
+
+              return (
+                <View
+                  key={order.id}
+                  className='feature-list-card feature-list-card--rose'
+                  onClick={() => handleOrderClick(order)}
+                >
+                  <View className='mb-2 flex items-center justify-between'>
+                    <Text className='feature-list-card__title'>
+                      {order.recipe?.name || `任务 #${order.id}`}
+                    </Text>
+                    <StatusChip label={statusMeta.label} tone={statusMeta.tone} />
+                  </View>
+                  <Text className='feature-list-card__description'>
+                    分组：{order.group?.name || '未命名分组'}
                   </Text>
-                  <Text
-                    className={`rounded-full px-2 py-1 text-xs ${statusToneMap[order.status]}`}
-                  >
-                    {statusLabelMap[order.status]}
+                  <Text className='feature-list-card__meta'>
+                    发起人：{order.creator?.nickname || '未命名'} / 执行人：
+                    {order.assignee?.nickname || '未命名'}
                   </Text>
                 </View>
-                <Text className='block text-sm text-gray-600'>
-                  分组：{order.group?.name || '未命名分组'}
-                </Text>
-                <Text className='mt-1 block text-xs text-gray-500'>
-                  发起人：{order.creator?.nickname || '未命名'} / 执行人：
-                  {order.assignee?.nickname || '未命名'}
-                </Text>
-              </View>
-            ))}
+              )
+            })}
           </View>
         )}
-      </View>
+      </SectionCard>
 
-      <View className='rounded-3xl bg-white p-4 shadow-sm'>
-        <View className='mb-3 flex items-center justify-between'>
-          <Text className='text-lg font-semibold text-gray-900'>我的分组</Text>
-          <Text className='text-xs text-gray-500'>{groups.length} 个空间</Text>
-        </View>
-
+      <SectionCard
+        title='我的分组'
+        description='把常用空间做成更明确的入口卡，不再和任务信息长得一样。'
+        meta={`${groups.length} 个空间`}
+        variant='soft'
+      >
         {loading ? (
           <View className='py-8 text-center text-gray-500'>加载中...</View>
         ) : groups.length === 0 ? (
-          <View className='rounded-2xl bg-gray-50 px-4 py-6 text-center text-sm text-gray-500'>
-            还没有分组，先创建一个小空间吧。
-          </View>
+          <EmptyState
+            tone='gray'
+            title='还没有分组'
+            description='先创建一个小空间，成员、菜谱和点餐任务都会围绕它展开。'
+          />
         ) : (
           <View>
             {groups.map((group) => (
               <View
                 key={group.id}
-                className='mb-3 flex items-center justify-between rounded-2xl border border-gray-100 px-4 py-4'
+                className='feature-list-card'
                 onClick={() => handleGroupClick(group.id)}
               >
-                <View>
-                  <Text className='block text-base font-medium text-gray-900'>
-                    {group.name}
-                  </Text>
-                  <Text className='mt-1 block text-xs text-gray-500'>
-                    点击查看成员、菜谱和点餐入口
-                  </Text>
+                <View className='flex items-center justify-between'>
+                  <View>
+                    <Text className='feature-list-card__title'>{group.name}</Text>
+                    <Text className='feature-list-card__description'>
+                      查看成员、菜谱、邀请方式和点餐入口
+                    </Text>
+                  </View>
+                  <Text className='tool-pill'>进入空间</Text>
                 </View>
-                <Text className='text-lg text-gray-400'>›</Text>
               </View>
             ))}
           </View>
         )}
-      </View>
+      </SectionCard>
     </View>
   )
 }

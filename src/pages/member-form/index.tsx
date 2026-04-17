@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Button, Picker, Switch, Text, View } from '@tarojs/components'
 import Taro from '@tarojs/taro'
-import { groupApi } from '../../services/api'
+import BottomActionBar from '@/components/bottom-action-bar'
+import PageHero from '@/components/page-hero'
+import SectionCard from '@/components/section-card'
+import { groupApi } from '@/services/api'
 
 interface GroupMember {
   id: number
@@ -228,90 +231,96 @@ export default function MemberForm() {
   }
 
   if (loading) {
-    return <View className='p-5'>加载中...</View>
+    return (
+      <View className='page-shell page-shell--sunset px-4 py-5'>
+        <Text className='block text-center text-gray-500'>加载中...</Text>
+      </View>
+    )
   }
 
   if (!member) {
-    return <View className='p-5'>成员不存在</View>
+    return (
+      <View className='page-shell page-shell--sunset px-4 py-5'>
+        <Text className='block text-center text-gray-500'>成员不存在</Text>
+      </View>
+    )
   }
 
+  const displayName = member.user?.nickname || member.tag?.name || '未命名成员'
+
   return (
-    <View className='min-h-screen bg-amber-50 px-4 py-5 pb-28'>
-      <View className='mb-5 rounded-3xl bg-white p-5 shadow-sm'>
-        <Text className='block text-xs uppercase tracking-wider text-amber-700'>
-          Member Setting
-        </Text>
-        <Text className='mt-2 block text-2xl font-bold text-gray-900'>
-          {member.user?.nickname || member.tag?.name || '未命名成员'}
-        </Text>
-        <Text className='mt-2 block text-sm text-gray-500'>
-          {group?.name || '当前分组'} / 成员 ID：{member.id}
-        </Text>
-      </View>
+    <View className='page-shell page-shell--sunset px-4 py-5 pb-32'>
+      <PageHero
+        badge='Member Setting'
+        title={displayName}
+        description={`${group?.name || '当前分组'} · 成员 ID ${member.id}`}
+        tone='sunset'
+      />
 
-      <View className='mb-5 rounded-3xl bg-white p-4 shadow-sm'>
-        <Text className='mb-3 block text-lg font-semibold text-gray-900'>
-          角色与状态
-        </Text>
+      <SectionCard
+        title='角色与状态'
+        description='展示角色影响标签与发单体验，状态用于标记是否仍在协作中。'
+        variant='accent'
+      >
+        <View className='form-field'>
+          <Text className='form-label'>展示角色</Text>
+          <Picker
+            mode='selector'
+            range={roleOptions.map((item) => item.label)}
+            value={roleIndexByValue[form.displayRole] || 0}
+            onChange={(event) => {
+              const index = Number(event.detail.value)
+              setForm((current) => ({
+                ...current,
+                displayRole: roleOptions[index]?.value || 'cook',
+              }))
+            }}
+          >
+            <View className='form-picker'>
+              <Text className='form-picker__label'>当前选择</Text>
+              <Text className='form-picker__value'>
+                {roleOptions[roleIndexByValue[form.displayRole] || 0].label}
+              </Text>
+            </View>
+          </Picker>
+        </View>
 
-        <Picker
-          mode='selector'
-          range={roleOptions.map((item) => item.label)}
-          value={roleIndexByValue[form.displayRole] || 0}
-          onChange={(event) => {
-            const index = Number(event.detail.value)
-            setForm((current) => ({
-              ...current,
-              displayRole: roleOptions[index]?.value || 'cook',
-            }))
-          }}
-        >
-          <View className='mb-3 rounded-2xl border border-amber-100 px-4 py-4'>
-            <Text className='block text-xs text-gray-500'>展示角色</Text>
-            <Text className='mt-1 block text-base font-medium text-gray-900'>
-              {roleOptions[roleIndexByValue[form.displayRole] || 0].label}
-            </Text>
-          </View>
-        </Picker>
+        <View className='form-field'>
+          <Text className='form-label'>成员状态</Text>
+          <Picker
+            mode='selector'
+            range={statusOptions.map((item) => item.label)}
+            value={statusIndexByValue[form.status] || 0}
+            onChange={(event) => {
+              const index = Number(event.detail.value)
+              setForm((current) => ({
+                ...current,
+                status: statusOptions[index]?.value || 'active',
+              }))
+            }}
+          >
+            <View className='form-picker'>
+              <Text className='form-picker__label'>当前选择</Text>
+              <Text className='form-picker__value'>
+                {statusOptions[statusIndexByValue[form.status] || 0].label}
+              </Text>
+            </View>
+          </Picker>
+        </View>
+      </SectionCard>
 
-        <Picker
-          mode='selector'
-          range={statusOptions.map((item) => item.label)}
-          value={statusIndexByValue[form.status] || 0}
-          onChange={(event) => {
-            const index = Number(event.detail.value)
-            setForm((current) => ({
-              ...current,
-              status: statusOptions[index]?.value || 'active',
-            }))
-          }}
-        >
-          <View className='rounded-2xl border border-amber-100 px-4 py-4'>
-            <Text className='block text-xs text-gray-500'>成员状态</Text>
-            <Text className='mt-1 block text-base font-medium text-gray-900'>
-              {statusOptions[statusIndexByValue[form.status] || 0].label}
-            </Text>
-          </View>
-        </Picker>
-      </View>
-
-      <View className='rounded-3xl bg-white p-4 shadow-sm'>
-        <Text className='mb-3 block text-lg font-semibold text-gray-900'>
-          权限开关
-        </Text>
+      <SectionCard
+        title='权限开关'
+        description='按最小权限原则配置，需要时再逐步放开。'
+        meta={`${permissionItems.length} 项`}
+        variant='soft'
+      >
         <View>
           {permissionItems.map((item) => (
-            <View
-              key={item.key}
-              className='mb-3 flex items-center justify-between rounded-2xl border border-gray-100 px-4 py-3'
-            >
-              <View className='flex-1 pr-3'>
-                <Text className='block text-base font-medium text-gray-900'>
-                  {item.title}
-                </Text>
-                <Text className='mt-1 block text-xs text-gray-500'>
-                  {item.description}
-                </Text>
+            <View key={item.key} className='permission-row'>
+              <View className='permission-row__text'>
+                <Text className='permission-row__title'>{item.title}</Text>
+                <Text className='permission-row__desc'>{item.description}</Text>
               </View>
               <Switch
                 checked={Boolean(form[item.key])}
@@ -322,13 +331,18 @@ export default function MemberForm() {
             </View>
           ))}
         </View>
-      </View>
+      </SectionCard>
 
-      <View className='fixed bottom-0 left-0 right-0 bg-white px-5 py-4 shadow-lg'>
-        <Button type='primary' loading={saving} disabled={saving} onClick={handleSave}>
+      <BottomActionBar>
+        <Button
+          className='app-button app-button--primary'
+          loading={saving}
+          disabled={saving}
+          onClick={handleSave}
+        >
           保存成员设置
         </Button>
-      </View>
+      </BottomActionBar>
     </View>
   )
 }

@@ -1,7 +1,11 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { View, Text, Button } from '@tarojs/components'
 import Taro from '@tarojs/taro'
-import { orderApi, recipeApi, groupApi } from '../../services/api'
+import BottomActionBar from '@/components/bottom-action-bar'
+import EmptyState from '@/components/empty-state'
+import PageHero from '@/components/page-hero'
+import SectionCard from '@/components/section-card'
+import { orderApi, recipeApi, groupApi } from '@/services/api'
 
 export default function Order() {
   const [recipes, setRecipes] = useState<any[]>([])
@@ -95,68 +99,115 @@ export default function Order() {
   }, [members])
 
   if (loading) {
-    return <View className='p-5'>加载中...</View>
+    return (
+      <View className='page-shell page-shell--sunset px-4 py-5'>
+        <Text className='block text-center text-gray-500'>加载中...</Text>
+      </View>
+    )
   }
 
   return (
-    <View className='p-5 min-h-screen bg-gray-100 pb-24'>
-      <View className='bg-white p-4 rounded-lg mb-5'>
-        <Text className='text-base font-bold mb-2-5 block'>选择菜谱</Text>
+    <View className='page-shell page-shell--sunset px-4 py-5 pb-32'>
+      <PageHero
+        badge='Order Studio'
+        title='发起点餐任务'
+        description='先选菜谱，再指定执行人。系统会自动生成一笔任务，后续进度都在任务详情里推进。'
+        tone='sunset'
+        stats={
+          <View className='hero-stat-grid'>
+            <View className='hero-stat-card'>
+              <Text className='hero-stat-card__label'>已选菜谱</Text>
+              <Text className='hero-stat-card__value'>{selectedRecipeId ? 1 : 0}</Text>
+              <Text className='hero-stat-card__hint'>从可用菜谱库中选择</Text>
+            </View>
+            <View className='hero-stat-card'>
+              <Text className='hero-stat-card__label'>已选执行人</Text>
+              <Text className='hero-stat-card__value'>{selectedAssigneeId ? 1 : 0}</Text>
+              <Text className='hero-stat-card__hint'>仅展示可接单成员</Text>
+            </View>
+          </View>
+        }
+      />
+
+      <SectionCard
+        title='选择菜谱'
+        description='建议优先选常做菜，任务信息会更清晰。'
+        meta={`${recipes.length} 个可用`}
+        variant='accent'
+      >
         {recipes.length > 0 ? (
           <View>
             {recipes.map((recipe) => (
               <View
                 key={recipe.id}
-              className={`mb-2-5 rounded border p-3 ${
+                className={
                   selectedRecipeId === recipe.id
-                    ? 'border-primary bg-pink-50'
-                    : 'border-gray-200'
-                }`}
+                    ? 'feature-list-card feature-list-card--amber'
+                    : 'feature-list-card'
+                }
                 onClick={() => handleSelectRecipe(recipe.id)}
               >
-                <Text>{recipe.name}</Text>
-              </View>
-            ))}
-          </View>
-        ) : (
-          <View className='text-center py-5 text-gray-500'>暂无菜谱</View>
-        )}
-      </View>
-
-      <View className='bg-white p-4 rounded-lg mb-5'>
-        <Text className='text-base font-bold mb-2-5 block'>选择执行人</Text>
-        {assignees.length > 0 ? (
-          <View>
-            {assignees.map((member) => (
-              <View
-                key={member.userId}
-              className={`mb-2-5 rounded border p-3 ${
-                  selectedAssigneeId === member.userId
-                    ? 'border-primary bg-pink-50'
-                    : 'border-gray-200'
-                }`}
-                onClick={() => handleSelectAssignee(member.userId)}
-              >
-                <Text>
-                  {member.user?.nickname || member.tag?.name || '执行人'}
+                <Text className='feature-list-card__title'>{recipe.name}</Text>
+                <Text className='feature-list-card__meta'>
+                  {selectedRecipeId === recipe.id ? '已选中' : '点击选中'}
                 </Text>
               </View>
             ))}
           </View>
         ) : (
-          <View className='text-center py-5 text-gray-500'>暂无可接单成员</View>
+          <EmptyState
+            tone='amber'
+            title='暂无菜谱'
+            description='先在分组里新建一个菜谱，再回来发起点餐任务。'
+          />
         )}
-      </View>
+      </SectionCard>
 
-      <View className='fixed bottom-0 left-0 right-0 p-5 bg-white shadow-top'>
+      <SectionCard
+        title='选择执行人'
+        description='执行人需要具备可接单权限，才能被分配任务。'
+        meta={`${assignees.length} 人可接单`}
+        variant='soft'
+      >
+        {assignees.length > 0 ? (
+          <View>
+            {assignees.map((member) => (
+              <View
+                key={member.userId}
+                className={
+                  selectedAssigneeId === member.userId
+                    ? 'feature-list-card feature-list-card--rose'
+                    : 'feature-list-card'
+                }
+                onClick={() => handleSelectAssignee(member.userId)}
+              >
+                <Text className='feature-list-card__title'>
+                  {member.user?.nickname || member.tag?.name || '执行人'}
+                </Text>
+                <Text className='feature-list-card__meta'>
+                  {selectedAssigneeId === member.userId ? '已选中' : '点击选中'}
+                </Text>
+              </View>
+            ))}
+          </View>
+        ) : (
+          <EmptyState
+            tone='rose'
+            title='暂无可接单成员'
+            description='请先在成员设置里打开“可接单”权限，再回来发起点餐。'
+          />
+        )}
+      </SectionCard>
+
+      <BottomActionBar>
         <Button
-          type='primary'
+          className='app-button app-button--primary'
           disabled={!selectedRecipeId || !selectedAssigneeId}
           onClick={handleSubmit}
         >
           点餐
         </Button>
-      </View>
+      </BottomActionBar>
     </View>
   )
 }

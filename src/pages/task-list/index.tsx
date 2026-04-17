@@ -1,17 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Button, Text, View } from '@tarojs/components'
 import Taro, { useDidShow } from '@tarojs/taro'
-import { orderApi } from '../../services/api'
-
-type OrderStatus =
-  | 'created'
-  | 'accepted'
-  | 'rejected'
-  | 'cooking'
-  | 'completed'
-  | 'confirmed'
-  | 'cancelled'
-  | 'expired'
+import EmptyState from '@/components/empty-state'
+import PageHero from '@/components/page-hero'
+import SectionCard from '@/components/section-card'
+import StatusChip from '@/components/status-chip'
+import { OrderStatus, orderStatusMetaMap } from '@/constants/ui'
+import { orderApi } from '@/services/api'
 
 interface OrderItem {
   id: number
@@ -32,28 +27,6 @@ interface OrderItem {
     id: number
     nickname?: string
   }
-}
-
-const statusLabelMap: Record<OrderStatus, string> = {
-  created: '待响应',
-  accepted: '已接单',
-  rejected: '已拒绝',
-  cooking: '制作中',
-  completed: '待确认',
-  confirmed: '已完成',
-  cancelled: '已取消',
-  expired: '已超时',
-}
-
-const statusToneMap: Record<OrderStatus, string> = {
-  created: 'bg-amber-100 text-amber-700',
-  accepted: 'bg-sky-100 text-sky-700',
-  rejected: 'bg-rose-100 text-rose-700',
-  cooking: 'bg-blue-100 text-blue-700',
-  completed: 'bg-emerald-100 text-emerald-700',
-  confirmed: 'bg-green-100 text-green-700',
-  cancelled: 'bg-gray-200 text-gray-600',
-  expired: 'bg-orange-100 text-orange-700',
 }
 
 const boardDefinitions: Array<{
@@ -140,86 +113,86 @@ export default function TaskList() {
   }
 
   return (
-    <View className='min-h-screen bg-cyan-50 px-4 py-5 pb-8'>
-      <View className='mb-5 rounded-3xl bg-gradient-to-br from-cyan-200 via-sky-100 to-white p-5 shadow-sm'>
-        <Text className='block text-xs uppercase tracking-widest text-cyan-700'>
-          Task Board
-        </Text>
-        <Text className='mt-2 block text-2xl font-bold text-gray-900'>我的任务看板</Text>
-        <Text className='mt-2 block text-sm leading-6 text-gray-700'>
-          按状态把任务摊开看，会比只刷最近几条更不容易漏单。
-        </Text>
-          <View className='mt-4 rounded-2xl bg-white px-4 py-3'>
-          <Text className='block text-xs text-gray-500'>待跟进任务</Text>
-          <Text className='mt-1 block text-2xl font-semibold text-gray-900'>
-            {pendingCount}
-          </Text>
-        </View>
-      </View>
+    <View className='page-shell page-shell--sky px-4 py-5 pb-8'>
+      <PageHero
+        badge='Task Board'
+        title='任务进度一眼看清'
+        description='这里不是首页的展开版，而是按状态管理任务的工作台，适合随时推进、确认和补进度。'
+        tone='sky'
+        stats={
+          <View className='hero-stat-grid'>
+            <View className='hero-stat-card'>
+              <Text className='hero-stat-card__label'>待跟进任务</Text>
+              <Text className='hero-stat-card__value'>{pendingCount}</Text>
+              <Text className='hero-stat-card__hint'>优先关注待响应、制作中和待确认</Text>
+            </View>
+            <View className='hero-stat-card'>
+              <Text className='hero-stat-card__label'>总任务数</Text>
+              <Text className='hero-stat-card__value'>{orders.length}</Text>
+              <Text className='hero-stat-card__hint'>所有历史任务都在这里收口</Text>
+            </View>
+          </View>
+        }
+        actions={
+          <Button className='app-button app-button--ghost' onClick={loadOrders}>
+            刷新任务列表
+          </Button>
+        }
+      />
 
       {loading ? (
-        <View className='rounded-3xl bg-white px-4 py-10 text-center text-gray-500 shadow-sm'>
-          加载中...
-        </View>
+        <SectionCard title='任务看板' description='正在同步最新任务状态。'>
+          <View className='py-10 text-center text-gray-500'>加载中...</View>
+        </SectionCard>
       ) : (
         <View>
           {boardSections.map((section) => (
-            <View key={section.key} className='mb-5 rounded-3xl bg-white p-4 shadow-sm'>
-              <View className='mb-3 flex items-center justify-between'>
-                <View>
-                  <Text className='block text-lg font-semibold text-gray-900'>
-                    {section.title}
-                  </Text>
-                  <Text className='mt-1 block text-xs text-gray-500'>
-                    {section.description}
-                  </Text>
-                </View>
-                <Text className='rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-600'>
-                  {section.orders.length} 条
-                </Text>
-              </View>
-
+            <SectionCard
+              key={section.key}
+              title={section.title}
+              description={section.description}
+              meta={`${section.orders.length} 条`}
+              variant='soft'
+            >
               {section.orders.length === 0 ? (
-                <View className='rounded-2xl bg-gray-50 px-4 py-6 text-center text-sm text-gray-500'>
-                  这一栏现在是空的。
-                </View>
+                <EmptyState
+                  tone='sky'
+                  title='这一栏现在是空的'
+                  description='状态分栏会自动归档，空出来说明这一阶段没有待处理任务。'
+                />
               ) : (
                 <View>
-                  {section.orders.map((order) => (
-                    <View
-                      key={order.id}
-                    className='mb-3 rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3'
-                      onClick={() => handleTaskClick(order.id)}
-                    >
-                      <View className='mb-2 flex items-center justify-between'>
-                        <Text className='text-base font-medium text-gray-900'>
-                          {order.recipe?.name || `任务 #${order.id}`}
+                  {section.orders.map((order) => {
+                    const statusMeta = orderStatusMetaMap[order.status]
+
+                    return (
+                      <View
+                        key={order.id}
+                        className='feature-list-card feature-list-card--sky'
+                        onClick={() => handleTaskClick(order.id)}
+                      >
+                        <View className='mb-2 flex items-center justify-between'>
+                          <Text className='feature-list-card__title'>
+                            {order.recipe?.name || `任务 #${order.id}`}
+                          </Text>
+                          <StatusChip label={statusMeta.label} tone={statusMeta.tone} />
+                        </View>
+                        <Text className='feature-list-card__description'>
+                          分组：{order.group?.name || '未命名分组'}
                         </Text>
-                        <Text
-                          className={`rounded-full px-2 py-1 text-xs ${statusToneMap[order.status]}`}
-                        >
-                          {statusLabelMap[order.status]}
+                        <Text className='feature-list-card__meta'>
+                          发起人：{order.creator?.nickname || '未命名'} / 执行人：
+                          {order.assignee?.nickname || '未命名'}
                         </Text>
                       </View>
-                      <Text className='block text-sm text-gray-600'>
-                        分组：{order.group?.name || '未命名分组'}
-                      </Text>
-                      <Text className='mt-1 block text-xs text-gray-500'>
-                        发起人：{order.creator?.nickname || '未命名'} / 执行人：
-                        {order.assignee?.nickname || '未命名'}
-                      </Text>
-                    </View>
-                  ))}
+                    )
+                  })}
                 </View>
               )}
-            </View>
+            </SectionCard>
           ))}
         </View>
       )}
-
-      <View className='mt-5'>
-        <Button onClick={loadOrders}>刷新任务列表</Button>
-      </View>
     </View>
   )
 }

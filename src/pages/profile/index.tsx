@@ -7,6 +7,7 @@ import SectionCard from '@/components/section-card'
 import StatusChip from '@/components/status-chip'
 import { NotificationStatus, notificationStatusMetaMap, notificationTitleMap } from '@/constants/ui'
 import { groupApi, messageApi, userApi } from '@/services/api'
+import { showErrorToast } from '@/utils/error'
 
 interface NotificationItem {
   id: number
@@ -32,10 +33,7 @@ export default function Profile() {
       setUser(profile)
       setNotifications(logs || [])
     } catch (error) {
-      Taro.showToast({
-        title: '加载失败',
-        icon: 'none',
-      })
+      showErrorToast(error, '加载失败')
     } finally {
       setLoading(false)
     }
@@ -81,10 +79,7 @@ export default function Profile() {
       })
     } catch (error) {
       Taro.hideLoading()
-      Taro.showToast({
-        title: '加入失败',
-        icon: 'none',
-      })
+      showErrorToast(error, '加入失败')
     }
   }
 

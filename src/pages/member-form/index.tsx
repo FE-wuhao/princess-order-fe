@@ -5,6 +5,7 @@ import BottomActionBar from '@/components/bottom-action-bar'
 import PageHero from '@/components/page-hero'
 import SectionCard from '@/components/section-card'
 import { groupApi } from '@/services/api'
+import { showErrorToast } from '@/utils/error'
 
 interface GroupMember {
   id: number
@@ -165,10 +166,7 @@ export default function MemberForm() {
         canAcceptOrder: currentMember.canAcceptOrder !== false,
       })
     } catch (error) {
-      Taro.showToast({
-        title: '加载失败',
-        icon: 'none',
-      })
+      showErrorToast(error, '加载失败')
     } finally {
       setLoading(false)
     }
@@ -221,10 +219,7 @@ export default function MemberForm() {
         Taro.navigateBack()
       }, 500)
     } catch (error) {
-      Taro.showToast({
-        title: '保存失败',
-        icon: 'none',
-      })
+      showErrorToast(error, '保存失败')
     } finally {
       setSaving(false)
     }

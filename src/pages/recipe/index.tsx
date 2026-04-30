@@ -7,6 +7,7 @@ import PageHero from '@/components/page-hero'
 import SectionCard from '@/components/section-card'
 import StatusChip from '@/components/status-chip'
 import { recipeApi } from '@/services/api'
+import { showErrorToast } from '@/utils/error'
 
 interface RecipeMethod {
   id: number
@@ -50,10 +51,7 @@ export default function Recipe() {
       const data = await recipeApi.getDetail(groupId, recipeId)
       setRecipe(data)
     } catch (error) {
-      Taro.showToast({
-        title: '加载失败',
-        icon: 'none',
-      })
+      showErrorToast(error, '加载失败')
     } finally {
       setLoading(false)
     }
@@ -75,10 +73,7 @@ export default function Recipe() {
       loadRecipe()
     } catch (error) {
       Taro.hideLoading()
-      Taro.showToast({
-        title: '添加失败',
-        icon: 'none',
-      })
+      showErrorToast(error, '添加失败')
     }
   }
 

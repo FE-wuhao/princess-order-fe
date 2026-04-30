@@ -6,6 +6,7 @@ import PageHero from '@/components/page-hero'
 import SectionCard from '@/components/section-card'
 import StatusChip from '@/components/status-chip'
 import { tagApi } from '@/services/api'
+import { showErrorToast } from '@/utils/error'
 
 interface Tag {
   id: number
@@ -28,10 +29,7 @@ export default function Tag() {
       const data = await tagApi.getList(groupId)
       setTags(data)
     } catch (error) {
-      Taro.showToast({
-        title: '加载失败',
-        icon: 'none',
-      })
+      showErrorToast(error, '加载失败')
     } finally {
       setLoading(false)
     }

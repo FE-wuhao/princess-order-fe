@@ -6,6 +6,7 @@ import EmptyState from '@/components/empty-state'
 import PageHero from '@/components/page-hero'
 import SectionCard from '@/components/section-card'
 import { groupApi } from '@/services/api'
+import { showErrorToast } from '@/utils/error'
 
 interface GroupMember {
   id: number
@@ -60,10 +61,7 @@ export default function Group() {
       const data = await groupApi.getDetail(groupId)
       setGroup(data)
     } catch (error) {
-      Taro.showToast({
-        title: '加载失败',
-        icon: 'none',
-      })
+      showErrorToast(error, '加载失败')
     } finally {
       setLoading(false)
     }
@@ -133,10 +131,7 @@ export default function Group() {
       })
     } catch (error) {
       Taro.hideLoading()
-      Taro.showToast({
-        title: '生成失败',
-        icon: 'none',
-      })
+      showErrorToast(error, '生成失败')
     }
   }
 
@@ -158,10 +153,7 @@ export default function Group() {
         icon: 'success',
       })
     } catch (error) {
-      Taro.showToast({
-        title: '复制失败',
-        icon: 'none',
-      })
+      showErrorToast(error, '复制失败')
     }
   }
 

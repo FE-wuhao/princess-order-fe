@@ -5,6 +5,7 @@ import BottomActionBar from '@/components/bottom-action-bar'
 import PageHero from '@/components/page-hero'
 import SectionCard from '@/components/section-card'
 import { recipeApi } from '@/services/api'
+import { showErrorToast } from '@/utils/error'
 
 type Difficulty = 'easy' | 'normal' | 'hard'
 
@@ -104,10 +105,7 @@ export default function RecipeForm() {
             : [createEmptyMethod()],
         )
       } catch (error) {
-        Taro.showToast({
-          title: '加载失败',
-          icon: 'none',
-        })
+        showErrorToast(error, '加载失败')
       } finally {
         setLoading(false)
       }
@@ -261,10 +259,7 @@ export default function RecipeForm() {
       }, 400)
     } catch (error) {
       Taro.hideLoading()
-      Taro.showToast({
-        title: isEdit ? '保存失败' : '创建失败',
-        icon: 'none',
-      })
+      showErrorToast(error, isEdit ? '保存失败' : '创建失败')
     } finally {
       setSaving(false)
     }
@@ -302,10 +297,7 @@ export default function RecipeForm() {
       }, 400)
     } catch (error) {
       Taro.hideLoading()
-      Taro.showToast({
-        title: '归档失败',
-        icon: 'none',
-      })
+      showErrorToast(error, '归档失败')
     } finally {
       setArchiving(false)
     }

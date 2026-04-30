@@ -7,6 +7,7 @@ import SectionCard from '@/components/section-card'
 import StatusChip from '@/components/status-chip'
 import { OrderStatus, orderStatusMetaMap } from '@/constants/ui'
 import { orderApi } from '@/services/api'
+import { showErrorToast } from '@/utils/error'
 
 interface OrderItem {
   id: number
@@ -72,10 +73,7 @@ export default function TaskList() {
       const data = await orderApi.getList({ mine: true })
       setOrders(data || [])
     } catch (error) {
-      Taro.showToast({
-        title: '任务列表加载失败',
-        icon: 'none',
-      })
+      showErrorToast(error, '任务列表加载失败')
     } finally {
       setLoading(false)
     }

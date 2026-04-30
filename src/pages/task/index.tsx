@@ -12,6 +12,7 @@ import {
   orderStatusMetaMap,
 } from '@/constants/ui'
 import { messageApi, orderApi, userApi } from '@/services/api'
+import { showErrorToast } from '@/utils/error'
 
 interface UserSummary {
   id: number
@@ -113,10 +114,7 @@ export default function Task() {
       setOrder(orderData)
       setCurrentUser(profile)
     } catch (error) {
-      Taro.showToast({
-        title: '任务加载失败',
-        icon: 'none',
-      })
+      showErrorToast(error, '任务加载失败')
     } finally {
       setLoading(false)
     }
@@ -157,10 +155,7 @@ export default function Task() {
       loadTask()
     } catch (error) {
       Taro.hideLoading()
-      Taro.showToast({
-        title: '操作失败',
-        icon: 'none',
-      })
+      showErrorToast(error, '操作失败')
     } finally {
       setActing(false)
     }
@@ -223,10 +218,7 @@ export default function Task() {
       loadTask()
     } catch (error) {
       Taro.hideLoading()
-      Taro.showToast({
-        title: '重试失败',
-        icon: 'none',
-      })
+      showErrorToast(error, '重试失败')
     } finally {
       setRetryingLogId(null)
     }

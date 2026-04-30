@@ -6,6 +6,7 @@ import EmptyState from '@/components/empty-state'
 import PageHero from '@/components/page-hero'
 import SectionCard from '@/components/section-card'
 import { orderApi, recipeApi, groupApi } from '@/services/api'
+import { showErrorToast } from '@/utils/error'
 
 export default function Order() {
   const [recipes, setRecipes] = useState<any[]>([])
@@ -29,10 +30,7 @@ export default function Order() {
       setRecipes(recipesData)
       setMembers(group.members || [])
     } catch (error) {
-      Taro.showToast({
-        title: '加载失败',
-        icon: 'none',
-      })
+      showErrorToast(error, '加载失败')
     } finally {
       setLoading(false)
     }
@@ -87,10 +85,7 @@ export default function Order() {
       }, 1500)
     } catch (error) {
       Taro.hideLoading()
-      Taro.showToast({
-        title: '点餐失败',
-        icon: 'none',
-      })
+      showErrorToast(error, '点餐失败')
     }
   }
 

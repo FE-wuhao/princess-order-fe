@@ -8,6 +8,7 @@ import StatusChip from '@/components/status-chip'
 import { orderStatusMetaMap } from '@/constants/ui'
 import { groupApi, orderApi } from '@/services/api'
 import { checkAuth, wxLogin } from '@/utils/auth'
+import { showErrorToast } from '@/utils/error'
 
 interface GroupItem {
   id: number
@@ -51,10 +52,7 @@ export default function Index() {
       setGroups(groupsData || [])
       setOrders(ordersData || [])
     } catch (error) {
-      Taro.showToast({
-        title: '看板加载失败',
-        icon: 'none',
-      })
+      showErrorToast(error, '看板加载失败')
     } finally {
       setLoading(false)
     }
@@ -65,10 +63,7 @@ export default function Index() {
       try {
         await wxLogin()
       } catch (error) {
-        Taro.showToast({
-          title: '登录失败',
-          icon: 'none',
-        })
+        showErrorToast(error, '登录失败')
         return
       }
     }
@@ -154,10 +149,7 @@ export default function Index() {
       loadDashboard()
     } catch (error) {
       Taro.hideLoading()
-      Taro.showToast({
-        title: '创建失败',
-        icon: 'none',
-      })
+      showErrorToast(error, '创建失败')
     }
   }
 

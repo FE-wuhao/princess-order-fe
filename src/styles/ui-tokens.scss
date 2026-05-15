@@ -1,3 +1,4 @@
+/* 尺寸按 375 设计稿标注写 px，由 Taro postcss 在小程序转 rpx、H5 转 rem */
 :root,
 page {
   --ui-bg-page: #fff8f7;
@@ -20,8 +21,8 @@ page {
   --ui-success-text: #1f8a5b;
   --ui-neutral-soft: #f3eef1;
   --ui-neutral-text: #7a6874;
-  --ui-shadow-card: 0 10rpx 30rpx rgba(116, 73, 95, 0.08);
-  --ui-shadow-floating: 0 20rpx 48rpx rgba(116, 73, 95, 0.14);
-  --ui-radius-card: 36rpx;
-  --ui-radius-pill: 9999rpx;
+  --ui-shadow-card: 0 5px 15px rgba(116, 73, 95, 0.08);
+  --ui-shadow-floating: 0 10px 24px rgba(116, 73, 95, 0.14);
+  --ui-radius-card: 18px;
+  --ui-radius-pill: 9999px;
 }

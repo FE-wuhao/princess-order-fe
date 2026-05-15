@@ -15,7 +15,7 @@ const plugins = [
   require('autoprefixer')(),
   pxtransform({
     platform: 'h5',
-    designWidth: 750,
+    designWidth: 375,
     deviceRatio,
     baseFontSize: 20,
     maxRootSize: 40,
@@ -39,7 +39,7 @@ const collectCssFiles = (dir) => {
 
 const transformFile = async (filePath) => {
   const input = fs.readFileSync(filePath, 'utf8');
-  if (!input.includes('rpx')) {
+  if (!/\d+px/.test(input)) {
     return;
   }
 

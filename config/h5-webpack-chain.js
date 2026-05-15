@@ -10,7 +10,7 @@ const getH5PostcssPlugins = () => [
   require('autoprefixer')(),
   require('postcss-pxtransform')({
     platform: 'h5',
-    designWidth: 750,
+    designWidth: 375,
     deviceRatio,
     baseFontSize: 20,
     maxRootSize: 40,
@@ -28,7 +28,7 @@ const postcssLoaderOptions = () => ({
   },
 });
 
-/** Taro H5 默认把 postcss 拆成独立 rule，scss 编译后 rpx 不会转成 rem，需手动接入 loader 链 */
+/** Taro H5 默认把 postcss 拆成独立 rule，需在 scss 编译后将 px 转为 rem */
 const attachPostcssToRule = (rule, postcssOptions, beforeLoader) => {
   const useKey = 'h5-postcss-pxtransform';
   if (rule.uses.has(useKey)) {

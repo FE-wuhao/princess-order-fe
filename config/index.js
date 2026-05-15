@@ -10,7 +10,7 @@ const userH5WebpackChain = config.h5?.webpackChain;
 module.exports = {
   projectName: "princess-order-miniprogram",
   date: "2024-1-1",
-  designWidth: 750,
+  designWidth: 375,
   deviceRatio: {
     640: 2.34 / 2,
     750: 1,

@@ -1,8 +1,11 @@
 const path = require("path");
+const { patchH5StylePipeline } = require("./h5-webpack-chain");
 
 // dev:* 使用 development，build:* 使用 production。
 const config =
   process.env.NODE_ENV === "development" ? require("./dev") : require("./prod");
+
+const userH5WebpackChain = config.h5?.webpackChain;
 
 module.exports = {
   projectName: "princess-order-miniprogram",
@@ -16,7 +19,10 @@ module.exports = {
   },
   sourceRoot: "src",
   outputRoot: "dist",
-  plugins: ["@tarojs/plugin-framework-react"],
+  plugins: [
+    "@tarojs/plugin-framework-react",
+    "@tarojs/plugin-platform-h5",
+  ],
   defineConstants: config.defineConstants || {},
   copy: {
     patterns: [],
@@ -64,6 +70,14 @@ module.exports = {
         enable: true,
         config: {},
       },
+      pxtransform: {
+        enable: true,
+        config: {
+          baseFontSize: 20,
+          maxRootSize: 40,
+          minRootSize: 20,
+        },
+      },
       cssModules: {
         enable: false,
         config: {
@@ -73,5 +87,11 @@ module.exports = {
       },
     },
     ...(config.h5 || {}),
+    webpackChain(chain, webpack) {
+      patchH5StylePipeline(chain);
+      if (typeof userH5WebpackChain === "function") {
+        userH5WebpackChain(chain, webpack);
+      }
+    },
   },
 };

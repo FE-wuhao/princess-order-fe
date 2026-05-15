@@ -7,7 +7,7 @@ import SectionCard from '@/components/section-card'
 import StatusChip from '@/components/status-chip'
 import { orderStatusMetaMap } from '@/constants/ui'
 import { groupApi, orderApi } from '@/services/api'
-import { checkAuth, wxLogin } from '@/utils/auth'
+import { checkAuth, ensureAuth } from '@/utils/auth'
 import { showErrorToast } from '@/utils/error'
 
 interface GroupItem {
@@ -59,13 +59,14 @@ export default function Index() {
   }, [])
 
   const ensureLoginAndLoad = useCallback(async () => {
-    if (!checkAuth()) {
-      try {
-        await wxLogin()
-      } catch (error) {
-        showErrorToast(error, '登录失败')
+    try {
+      const authed = await ensureAuth()
+      if (!authed) {
         return
       }
+    } catch (error) {
+      showErrorToast(error, '登录失败')
+      return
     }
 
     loadDashboard()

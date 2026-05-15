@@ -1,4 +1,5 @@
 import Taro from "@tarojs/taro";
+import { isH5 } from "@/utils/platform";
 
 // 使用 Taro 的 defineConstants 定义的常量
 // 在编译时会被替换为实际值，不会在运行时访问 process.env
@@ -86,10 +87,9 @@ export const request = async <T = any>(
         if (res.statusCode >= 200 && res.statusCode < 300) {
           resolve(res.data as T);
         } else if (res.statusCode === 401) {
-          // 未授权，清除token并跳转到登录
           Taro.removeStorageSync("token");
           Taro.reLaunch({
-            url: "/pages/index/index",
+            url: isH5 ? "/pages/login/index" : "/pages/index/index",
           });
           reject(new Error("未授权，请重新登录"));
         } else {

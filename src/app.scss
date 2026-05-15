@@ -1,7 +1,11 @@
 @use './styles/ui-tokens.scss';
 @use './styles/ui-patterns.scss';
 
-page {
+page,
+html,
+body,
+#app,
+.taro_page {
   background-color: var(--ui-bg-page);
   color: var(--ui-text-primary);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
@@ -9,6 +13,11 @@ page {
     "Helvetica Neue", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+#app,
+.taro_router {
+  min-height: 100%;
 }
 
 .fixed {
@@ -65,6 +74,22 @@ page {
 
 .gap-3 {
   gap: 24rpx;
+}
+
+.space-y-3 > view + view,
+.space-y-3 > taro-view-core + taro-view-core,
+.space-y-3 > * + * {
+  margin-top: 24rpx;
+}
+
+.space-y-4 > view + view,
+.space-y-4 > taro-view-core + taro-view-core,
+.space-y-4 > * + * {
+  margin-top: 32rpx;
+}
+
+.w-full {
+  width: 100%;
 }
 
 .m-0 {
@@ -520,4 +545,36 @@ page {
 
 .shadow-top {
   box-shadow: 0 -4rpx 8rpx rgba(0, 0, 0, 0.1);
+}
+
+.text-slate-500 {
+  color: #64748b;
+}
+
+.h-11 {
+  height: 88rpx;
+}
+
+.w-11 {
+  width: 88rpx;
+}
+
+.h-20 {
+  height: 160rpx;
+}
+
+.w-20 {
+  width: 160rpx;
+}
+
+/* H5：覆盖 Taro 默认按钮，保证 app-button 系列样式生效 */
+taro-button-core.app-button,
+.app-button {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+taro-button-core.app-button::after,
+.app-button::after {
+  border: 0;
 }

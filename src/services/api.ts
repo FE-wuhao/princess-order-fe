@@ -7,6 +7,18 @@ export const authApi = {
       method: 'POST',
       data: { code, ...userInfo },
     }),
+  login: (username: string, password: string) =>
+    request({
+      url: '/auth/login',
+      method: 'POST',
+      data: { username, password },
+    }),
+  register: (username: string, password: string) =>
+    request({
+      url: '/auth/register',
+      method: 'POST',
+      data: { username, password },
+    }),
 }
 
 export const userApi = {

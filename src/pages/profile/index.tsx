@@ -9,6 +9,8 @@ import StatusChip from '@/components/status-chip'
 import { NotificationStatus, notificationStatusMetaMap, notificationTitleMap } from '@/constants/ui'
 import { groupApi, messageApi, userApi } from '@/services/api'
 import { hideLoadingAndShowError, showErrorToast } from '@/utils/error'
+import { ensureAuth, logout } from '@/utils/auth'
+import { isH5 } from '@/utils/platform'
 import { uploadAvatar } from '@/utils/upload'
 
 interface UserProfile {
@@ -34,6 +36,9 @@ export default function Profile() {
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const [inviteCodeDraft, setInviteCodeDraft] = useState('')
+  const [showInviteForm, setShowInviteForm] = useState(false)
+  const [joiningGroup, setJoiningGroup] = useState(false)
 
   const loadProfile = useCallback(async () => {
     setLoading(true)
@@ -53,12 +58,23 @@ export default function Profile() {
     }
   }, [])
 
-  useEffect(() => {
+  const bootstrap = useCallback(async () => {
+    const authed = await ensureAuth()
+    if (!authed) {
+      return
+    }
     loadProfile()
   }, [loadProfile])
 
+  useEffect(() => {
+    bootstrap()
+  }, [bootstrap])
+
   useDidShow(() => {
-    loadProfile()
+    if (showInviteForm) {
+      return
+    }
+    bootstrap()
   })
 
   const handleSaveProfile = async () => {
@@ -99,8 +115,7 @@ export default function Profile() {
     }
   }
 
-  const handleChooseAvatar = async (event: { detail: { avatarUrl: string } }) => {
-    const tempPath = event.detail.avatarUrl
+  const uploadAvatarFromPath = async (tempPath: string) => {
     if (!tempPath || uploadingAvatar) {
       return
     }
@@ -124,6 +139,19 @@ export default function Profile() {
     }
   }
 
+  const handleChooseAvatar = async (event: { detail: { avatarUrl: string } }) => {
+    await uploadAvatarFromPath(event.detail.avatarUrl)
+  }
+
+  const handlePickAvatarH5 = async () => {
+    const result = await Taro.chooseImage({ count: 1 })
+    const tempPath = result.tempFilePaths?.[0]
+    if (!tempPath) {
+      return
+    }
+    await uploadAvatarFromPath(tempPath)
+  }
+
   const profileTitle = nicknameDraft.trim() || user?.nickname || '个人中心'
   const avatarMember = {
     userId: user?.id || 0,
@@ -134,7 +162,44 @@ export default function Profile() {
     },
   }
 
+  const submitInviteCode = async (rawCode: string) => {
+    const inviteCode = rawCode.trim().toUpperCase()
+    if (!inviteCode) {
+      Taro.showToast({
+        title: '请输入邀请码',
+        icon: 'none',
+      })
+      return
+    }
+
+    if (joiningGroup) {
+      return
+    }
+
+    setJoiningGroup(true)
+    try {
+      Taro.showLoading({ title: '加入中...' })
+      await groupApi.joinByInvite(inviteCode)
+      Taro.hideLoading()
+      setInviteCodeDraft('')
+      setShowInviteForm(false)
+      Taro.showToast({
+        title: '加入成功',
+        icon: 'success',
+      })
+    } catch (error) {
+      hideLoadingAndShowError(error, '加入失败')
+    } finally {
+      setJoiningGroup(false)
+    }
+  }
+
   const handleJoinGroup = async () => {
+    if (isH5) {
+      setShowInviteForm(true)
+      return
+    }
+
     const result = await Taro.showModal({
       title: '输入邀请码',
       editable: true,
@@ -146,27 +211,7 @@ export default function Profile() {
       return
     }
 
-    const inviteCode = result.content?.trim().toUpperCase()
-
-    if (!inviteCode) {
-      Taro.showToast({
-        title: '请输入邀请码',
-        icon: 'none',
-      })
-      return
-    }
-
-    try {
-      Taro.showLoading({ title: '加入中...' })
-      await groupApi.joinByInvite(inviteCode)
-      Taro.hideLoading()
-      Taro.showToast({
-        title: '加入成功',
-        icon: 'success',
-      })
-    } catch (error) {
-      hideLoadingAndShowError(error, '加入失败')
-    }
+    await submitInviteCode(result.content || '')
   }
 
   if (loading) {
@@ -202,15 +247,20 @@ export default function Profile() {
 
       <SectionCard
         title='我的资料'
-        description='点击头像选择微信头像，昵称填写后点保存即可。'
+        description={
+          isH5
+            ? '点击头像从相册选择图片，昵称填写后点保存即可。'
+            : '点击头像选择微信头像，昵称填写后点保存即可。'
+        }
         variant='accent'
       >
         <View className='feature-list-card feature-list-card--sky'>
           <View className='mb-4 flex items-center'>
             <Button
               className='mr-4 h-20 w-20 overflow-hidden rounded-full border-0 bg-transparent p-0 after:border-0'
-              openType='chooseAvatar'
-              onChooseAvatar={handleChooseAvatar}
+              openType={isH5 ? undefined : 'chooseAvatar'}
+              onChooseAvatar={isH5 ? undefined : handleChooseAvatar}
+              onClick={isH5 ? handlePickAvatarH5 : undefined}
               loading={uploadingAvatar}
               disabled={uploadingAvatar}
             >
@@ -252,9 +302,11 @@ export default function Profile() {
         title='加入分组'
         description='向群主拿到邀请码后，直接在这里加入对应分组。'
         actions={
-          <Button className='app-button app-button--primary app-button--mini' onClick={handleJoinGroup}>
-            输入邀请码
-          </Button>
+          !showInviteForm ? (
+            <Button className='app-button app-button--primary app-button--mini' onClick={handleJoinGroup}>
+              输入邀请码
+            </Button>
+          ) : null
         }
         variant='accent'
       >
@@ -264,8 +316,46 @@ export default function Profile() {
             加入成功后回到首页或分组页刷新，就能看到新空间。
           </Text>
           <Text className='feature-list-card__meta'>邀请码通常是 6 位大写字母数字组合</Text>
+          {showInviteForm ? (
+            <View className='mt-4 space-y-3'>
+              <Input
+                className='rounded-2xl bg-white/80 px-4 py-3 text-base text-slate-700'
+                value={inviteCodeDraft}
+                placeholder='例如：GRBQ7X'
+                onInput={(event) => setInviteCodeDraft(event.detail.value.toUpperCase())}
+              />
+              <View className='flex gap-2'>
+                <Button
+                  className='app-button app-button--primary app-button--mini'
+                  loading={joiningGroup}
+                  disabled={joiningGroup}
+                  onClick={() => submitInviteCode(inviteCodeDraft)}
+                >
+                  加入
+                </Button>
+                <Button
+                  className='app-button app-button--ghost app-button--mini'
+                  disabled={joiningGroup}
+                  onClick={() => {
+                    setShowInviteForm(false)
+                    setInviteCodeDraft('')
+                  }}
+                >
+                  取消
+                </Button>
+              </View>
+            </View>
+          ) : null}
         </View>
       </SectionCard>
+
+      {isH5 ? (
+        <SectionCard title='账号' description='退出后需重新登录。' variant='soft'>
+          <Button className='app-button app-button--ghost' onClick={logout}>
+            退出登录
+          </Button>
+        </SectionCard>
+      ) : null}
 
       <SectionCard
         title='最近通知'

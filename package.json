@@ -12,7 +12,7 @@
     "build:swan": "taro build --type swan",
     "build:alipay": "taro build --type alipay",
     "build:tt": "taro build --type tt",
-    "build:h5": "taro build --type h5",
+    "build:h5": "taro build --type h5 && node scripts/postcss-h5-fix.js",
     "build:rn": "taro build --type rn",
     "build:qq": "taro build --type qq",
     "build:jd": "taro build --type jd",
@@ -26,18 +26,22 @@
     "dev:qq": "npm run build:qq -- --watch",
     "dev:jd": "npm run build:jd -- --watch",
     "dev:quickapp": "npm run build:quickapp -- --watch",
-    "start": "npm run dev:weapp"
+    "start": "npm run dev:weapp",
+    "deploy:h5": "powershell -ExecutionPolicy Bypass -File ./scripts/deploy-h5.ps1",
+    "deploy:h5:dry-run": "powershell -ExecutionPolicy Bypass -File ./scripts/deploy-h5.ps1 -WhatIf"
   },
   "author": "",
   "dependencies": {
     "@tarojs/components": "^4.1.9",
     "@tarojs/helper": "^4.1.9",
     "@tarojs/plugin-framework-react": "^4.1.9",
+    "@tarojs/plugin-platform-h5": "4.1.9",
     "@tarojs/plugin-platform-weapp": "^4.1.9",
     "@tarojs/react": "^4.1.9",
     "@tarojs/runtime": "^4.1.9",
     "@tarojs/shared": "^4.1.9",
     "@tarojs/taro": "^4.1.9",
+    "@tarojs/taro-h5": "4.1.9",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },

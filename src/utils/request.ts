@@ -12,6 +12,57 @@ interface RequestOptions {
   header?: Record<string, string>;
 }
 
+const parseResponsePayload = (data: unknown): Record<string, unknown> => {
+  if (!data) {
+    return {};
+  }
+
+  if (typeof data === "string") {
+    try {
+      const parsed = JSON.parse(data) as unknown;
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        return parsed as Record<string, unknown>;
+      }
+    } catch {
+      return { message: data };
+    }
+    return { message: data };
+  }
+
+  if (typeof data === "object" && !Array.isArray(data)) {
+    return data as Record<string, unknown>;
+  }
+
+  return {};
+};
+
+export const extractResponseMessage = (
+  data: unknown,
+  fallback = "请求失败",
+): string => {
+  const payload = parseResponsePayload(data);
+  const { message } = payload;
+
+  if (Array.isArray(message)) {
+    const text = message
+      .filter((item): item is string => typeof item === "string" && item.trim())
+      .join("；");
+    if (text) {
+      return text;
+    }
+  }
+
+  if (typeof message === "string" && message.trim()) {
+    return message;
+  }
+
+  if (typeof payload.error === "string" && payload.error.trim()) {
+    return payload.error;
+  }
+
+  return fallback;
+};
+
 export const request = async <T = any>(
   options: RequestOptions
 ): Promise<T> => {
@@ -42,7 +93,7 @@ export const request = async <T = any>(
           });
           reject(new Error("未授权，请重新登录"));
         } else {
-          reject(new Error(res.data?.message || "请求失败"));
+          reject(new Error(extractResponseMessage(res.data)));
         }
       },
       fail: (err) => {

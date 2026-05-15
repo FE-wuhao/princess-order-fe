@@ -1,22 +1,26 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Button, Text, View } from '@tarojs/components'
+import { Button, Input, Text, View } from '@tarojs/components'
 import Taro from '@tarojs/taro'
 import BottomActionBar from '@/components/bottom-action-bar'
 import EmptyState from '@/components/empty-state'
+import MemberAvatar from '@/components/member-avatar'
 import PageHero from '@/components/page-hero'
 import SectionCard from '@/components/section-card'
-import { groupApi } from '@/services/api'
+import { groupApi, userApi } from '@/services/api'
 import { showErrorToast } from '@/utils/error'
+import { getMemberDisplayName, getMemberSubtitle } from '@/utils/member'
 
 interface GroupMember {
   id: number
   userId: number
+  remark?: string | null
   displayRole?: 'requester' | 'cook' | 'both'
   canCreateOrder?: boolean
   canAcceptOrder?: boolean
   user?: {
     id: number
     nickname?: string
+    avatar?: string
   }
   tag?: {
     id: number
@@ -46,9 +50,31 @@ const roleLabelMap: Record<NonNullable<GroupMember['displayRole']>, string> = {
   both: '双角色',
 }
 
+const formatInviteExpiry = (value?: string | null) => {
+  if (!value) {
+    return ''
+  }
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return value
+  }
+
+  return date.toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
 export default function Group() {
   const [group, setGroup] = useState<GroupDetail | null>(null)
   const [loading, setLoading] = useState(false)
+  const [currentUserId, setCurrentUserId] = useState(0)
+  const [myRemarkDraft, setMyRemarkDraft] = useState('')
+  const [savingMyRemark, setSavingMyRemark] = useState(false)
 
   const groupId = useMemo(() => {
     const params = Taro.getCurrentInstance().router?.params
@@ -58,8 +84,16 @@ export default function Group() {
   const loadGroup = useCallback(async () => {
     setLoading(true)
     try {
-      const data = await groupApi.getDetail(groupId)
+      const [data, profile] = await Promise.all([
+        groupApi.getDetail(groupId),
+        userApi.getProfile(),
+      ])
       setGroup(data)
+      setCurrentUserId(profile?.id || 0)
+      const myMember = (data?.members || []).find(
+        (member: GroupMember) => member.userId === profile?.id,
+      )
+      setMyRemarkDraft(myMember?.remark || '')
     } catch (error) {
       showErrorToast(error, '加载失败')
     } finally {
@@ -109,6 +143,29 @@ export default function Group() {
     Taro.navigateTo({
       url: `/pages/member-form/index?groupId=${groupId}&memberId=${memberId}`,
     })
+  }
+
+  const handleSaveMyRemark = async () => {
+    if (savingMyRemark) {
+      return
+    }
+
+    setSavingMyRemark(true)
+    try {
+      Taro.showLoading({ title: '保存中...' })
+      await groupApi.updateMyRemark(groupId, myRemarkDraft.trim() || null)
+      Taro.hideLoading()
+      Taro.showToast({
+        title: '备注已保存',
+        icon: 'success',
+      })
+      await loadGroup()
+    } catch (error) {
+      Taro.hideLoading()
+      showErrorToast(error, '保存失败')
+    } finally {
+      setSavingMyRemark(false)
+    }
   }
 
   const handleRefreshInviteCode = async () => {
@@ -203,7 +260,7 @@ export default function Group() {
           <Text className='page-hero__title'>{group.inviteCode || '暂未生成'}</Text>
           <Text className='feature-list-card__description'>
             {group.inviteExpiredAt
-              ? `有效期至 ${group.inviteExpiredAt}`
+              ? `有效期至 ${formatInviteExpiry(group.inviteExpiredAt)}，过期后你再次打开分组页会自动更新`
               : '刷新一次就会生成新的邀请码，适合分享给新成员。'}
           </Text>
           <View className='mt-3'>
@@ -216,35 +273,73 @@ export default function Group() {
 
       <SectionCard
         title='成员与角色'
-        description='把可发单、可接单和角色信息放在同一块，方便快速调整。'
+        description='展示头像、分组备注和角色权限；管理员可点成员进入详细设置。'
         actions={
           <Button className='app-button app-button--ghost app-button--mini' onClick={handleTagClick}>
             标签管理
           </Button>
         }
       >
-        <View>
-          {group.members?.map((member) => (
-            <View
-              key={member.id}
-              className='feature-list-card feature-list-card--rose'
-              onClick={() => handleMemberClick(member.id)}
-            >
-              <View className='flex items-center justify-between'>
-                <Text className='feature-list-card__title'>
-                  {member.user?.nickname || member.tag?.name || '未命名成员'}
-                </Text>
-                <Text className='tool-pill'>
-                  {member.displayRole ? roleLabelMap[member.displayRole] : '未定义'}
-                </Text>
-              </View>
-              <Text className='feature-list-card__description'>
-                {member.canCreateOrder ? '可发单' : '不可发单'} /{' '}
-                {member.canAcceptOrder ? '可接单' : '不可接单'}
-              </Text>
-              <Text className='feature-list-card__meta'>点击调整角色、权限和标签归属</Text>
+        {currentUserId ? (
+          <View className='feature-list-card feature-list-card--sky mb-3'>
+            <Text className='feature-list-card__title'>我在本组的称呼</Text>
+            <Text className='feature-list-card__description'>
+              只影响当前分组里的展示，例如「管家」「小厨」。
+            </Text>
+            <Input
+              className='mt-3 rounded-2xl bg-white/80 px-4 py-3 text-base text-slate-700'
+              maxlength={50}
+              placeholder='可选，留空则显示昵称'
+              value={myRemarkDraft}
+              onInput={(event) => setMyRemarkDraft(event.detail.value)}
+            />
+            <View className='mt-3'>
+              <Button
+                className='app-button app-button--secondary app-button--mini'
+                loading={savingMyRemark}
+                disabled={savingMyRemark}
+                onClick={handleSaveMyRemark}
+              >
+                保存我的备注
+              </Button>
             </View>
-          ))}
+          </View>
+        ) : null}
+
+        <View>
+          {group.members?.map((member) => {
+            const subtitle = getMemberSubtitle(member)
+
+            return (
+              <View
+                key={member.id}
+                className='feature-list-card feature-list-card--rose'
+                onClick={() => handleMemberClick(member.id)}
+              >
+                <View className='flex items-center justify-between'>
+                  <View className='flex items-center'>
+                    <MemberAvatar className='mr-3' member={member} size='md' />
+                    <View>
+                      <Text className='feature-list-card__title'>
+                        {getMemberDisplayName(member)}
+                      </Text>
+                      {subtitle ? (
+                        <Text className='mt-1 block text-sm text-slate-500'>{subtitle}</Text>
+                      ) : null}
+                    </View>
+                  </View>
+                  <Text className='tool-pill'>
+                    {member.displayRole ? roleLabelMap[member.displayRole] : '未定义'}
+                  </Text>
+                </View>
+                <Text className='feature-list-card__description'>
+                  {member.canCreateOrder ? '可发单' : '不可发单'} /{' '}
+                  {member.canAcceptOrder ? '可接单' : '不可接单'}
+                </Text>
+                <Text className='feature-list-card__meta'>点击调整角色、权限和成员备注</Text>
+              </View>
+            )
+          })}
         </View>
       </SectionCard>
 

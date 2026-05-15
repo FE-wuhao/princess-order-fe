@@ -33,12 +33,38 @@ export const getErrorMessage = (
   return fallback
 }
 
+const WECHAT_TOAST_TITLE_LIMIT = 7
+
 export const showErrorToast = (
   error: unknown,
   fallback = '请求失败',
 ): void => {
+  const message = getErrorMessage(error, fallback)
+  const titleLength = [...message].length
+
+  if (titleLength > WECHAT_TOAST_TITLE_LIMIT) {
+    void Taro.showModal({
+      title: '操作失败',
+      content: message,
+      showCancel: false,
+      confirmText: '知道了',
+    })
+    return
+  }
+
   Taro.showToast({
-    title: getErrorMessage(error, fallback),
+    title: message,
     icon: 'none',
+  })
+}
+
+export const hideLoadingAndShowError = (
+  error: unknown,
+  fallback = '请求失败',
+): void => {
+  Taro.hideLoading({
+    complete: () => {
+      showErrorToast(error, fallback)
+    },
   })
 }

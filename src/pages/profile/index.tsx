@@ -1,13 +1,21 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Button, View, Text } from '@tarojs/components'
+import { Button, Input, View, Text } from '@tarojs/components'
 import Taro, { useDidShow } from '@tarojs/taro'
 import EmptyState from '@/components/empty-state'
+import MemberAvatar from '@/components/member-avatar'
 import PageHero from '@/components/page-hero'
 import SectionCard from '@/components/section-card'
 import StatusChip from '@/components/status-chip'
 import { NotificationStatus, notificationStatusMetaMap, notificationTitleMap } from '@/constants/ui'
 import { groupApi, messageApi, userApi } from '@/services/api'
-import { showErrorToast } from '@/utils/error'
+import { hideLoadingAndShowError, showErrorToast } from '@/utils/error'
+import { uploadAvatar } from '@/utils/upload'
+
+interface UserProfile {
+  id: number
+  nickname?: string | null
+  avatar?: string | null
+}
 
 interface NotificationItem {
   id: number
@@ -19,9 +27,13 @@ interface NotificationItem {
 }
 
 export default function Profile() {
-  const [user, setUser] = useState<any | null>(null)
+  const [user, setUser] = useState<UserProfile | null>(null)
+  const [nicknameDraft, setNicknameDraft] = useState('')
+  const [avatarUrl, setAvatarUrl] = useState('')
   const [notifications, setNotifications] = useState<NotificationItem[]>([])
   const [loading, setLoading] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
 
   const loadProfile = useCallback(async () => {
     setLoading(true)
@@ -31,6 +43,8 @@ export default function Profile() {
         messageApi.getNotifications(),
       ])
       setUser(profile)
+      setNicknameDraft(profile?.nickname || '')
+      setAvatarUrl(profile?.avatar || '')
       setNotifications(logs || [])
     } catch (error) {
       showErrorToast(error, '加载失败')
@@ -46,6 +60,79 @@ export default function Profile() {
   useDidShow(() => {
     loadProfile()
   })
+
+  const handleSaveProfile = async () => {
+    const nickname = nicknameDraft.trim()
+
+    if (!nickname) {
+      Taro.showToast({
+        title: '请输入昵称',
+        icon: 'none',
+      })
+      return
+    }
+
+    if (saving) {
+      return
+    }
+
+    setSaving(true)
+    try {
+      Taro.showLoading({ title: '保存中...' })
+      const nextUser = await userApi.updateProfile({
+        nickname,
+        avatar: avatarUrl || undefined,
+      })
+      Taro.hideLoading()
+      setUser(nextUser)
+      setNicknameDraft(nextUser?.nickname || '')
+      setAvatarUrl(nextUser?.avatar || '')
+      Taro.showToast({
+        title: '资料已保存',
+        icon: 'success',
+      })
+    } catch (error) {
+      Taro.hideLoading()
+      showErrorToast(error, '保存失败')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleChooseAvatar = async (event: { detail: { avatarUrl: string } }) => {
+    const tempPath = event.detail.avatarUrl
+    if (!tempPath || uploadingAvatar) {
+      return
+    }
+
+    setUploadingAvatar(true)
+    try {
+      Taro.showLoading({ title: '上传头像...' })
+      const { avatar } = await uploadAvatar(tempPath)
+      Taro.hideLoading()
+      setAvatarUrl(avatar)
+      setUser((current) => (current ? { ...current, avatar } : current))
+      Taro.showToast({
+        title: '头像已更新',
+        icon: 'success',
+      })
+    } catch (error) {
+      Taro.hideLoading()
+      showErrorToast(error, '头像上传失败')
+    } finally {
+      setUploadingAvatar(false)
+    }
+  }
+
+  const profileTitle = nicknameDraft.trim() || user?.nickname || '个人中心'
+  const avatarMember = {
+    userId: user?.id || 0,
+    remark: null,
+    user: {
+      nickname: profileTitle,
+      avatar: avatarUrl,
+    },
+  }
 
   const handleJoinGroup = async () => {
     const result = await Taro.showModal({
@@ -78,8 +165,7 @@ export default function Profile() {
         icon: 'success',
       })
     } catch (error) {
-      Taro.hideLoading()
-      showErrorToast(error, '加入失败')
+      hideLoadingAndShowError(error, '加入失败')
     }
   }
 
@@ -95,8 +181,8 @@ export default function Profile() {
     <View className='page-shell page-shell--sky px-4 py-5'>
       <PageHero
         badge='Profile'
-        title={user?.nickname || '个人中心'}
-        description='加入分组入口与最近通知都在这里，方便随时确认协作状态。'
+        title={profileTitle}
+        description='设置头像和昵称后，分组成员列表、任务详情都会同步展示。'
         tone='sky'
         stats={
           <View className='hero-stat-grid'>
@@ -113,6 +199,54 @@ export default function Profile() {
           </View>
         }
       />
+
+      <SectionCard
+        title='我的资料'
+        description='点击头像选择微信头像，昵称填写后点保存即可。'
+        variant='accent'
+      >
+        <View className='feature-list-card feature-list-card--sky'>
+          <View className='mb-4 flex items-center'>
+            <Button
+              className='mr-4 h-20 w-20 overflow-hidden rounded-full border-0 bg-transparent p-0 after:border-0'
+              openType='chooseAvatar'
+              onChooseAvatar={handleChooseAvatar}
+              loading={uploadingAvatar}
+              disabled={uploadingAvatar}
+            >
+              <MemberAvatar member={avatarMember} size='lg' />
+            </Button>
+            <View className='flex-1'>
+              <Text className='feature-list-card__title'>{profileTitle}</Text>
+              <Text className='mt-1 block text-sm text-slate-500'>
+                头像会保存到服务器，分组里其他成员也能看到。
+              </Text>
+            </View>
+          </View>
+
+          <Text className='feature-list-card__meta'>昵称</Text>
+          <Input
+            className='mt-2 rounded-2xl bg-white/80 px-4 py-3 text-base text-slate-700'
+            type='nickname'
+            maxlength={50}
+            placeholder='给自己起一个分组里容易识别的名字'
+            value={nicknameDraft}
+            onInput={(event) => setNicknameDraft(event.detail.value)}
+            onBlur={(event) => setNicknameDraft(event.detail.value.trim())}
+          />
+
+          <View className='mt-4'>
+            <Button
+              className='app-button app-button--primary app-button--mini'
+              loading={saving}
+              disabled={saving || uploadingAvatar}
+              onClick={handleSaveProfile}
+            >
+              保存资料
+            </Button>
+          </View>
+        </View>
+      </SectionCard>
 
       <SectionCard
         title='加入分组'

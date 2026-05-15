@@ -5,8 +5,10 @@ import BottomActionBar from '@/components/bottom-action-bar'
 import EmptyState from '@/components/empty-state'
 import PageHero from '@/components/page-hero'
 import SectionCard from '@/components/section-card'
+import MemberAvatar from '@/components/member-avatar'
 import { orderApi, recipeApi, groupApi } from '@/services/api'
 import { showErrorToast } from '@/utils/error'
+import { getMemberDisplayName, getMemberSubtitle } from '@/utils/member'
 
 export default function Order() {
   const [recipes, setRecipes] = useState<any[]>([])
@@ -166,24 +168,36 @@ export default function Order() {
       >
         {assignees.length > 0 ? (
           <View>
-            {assignees.map((member) => (
-              <View
-                key={member.userId}
-                className={
-                  selectedAssigneeId === member.userId
-                    ? 'feature-list-card feature-list-card--rose'
-                    : 'feature-list-card'
-                }
-                onClick={() => handleSelectAssignee(member.userId)}
-              >
-                <Text className='feature-list-card__title'>
-                  {member.user?.nickname || member.tag?.name || '执行人'}
-                </Text>
-                <Text className='feature-list-card__meta'>
-                  {selectedAssigneeId === member.userId ? '已选中' : '点击选中'}
-                </Text>
-              </View>
-            ))}
+            {assignees.map((member) => {
+              const subtitle = getMemberSubtitle(member)
+
+              return (
+                <View
+                  key={member.userId}
+                  className={
+                    selectedAssigneeId === member.userId
+                      ? 'feature-list-card feature-list-card--rose'
+                      : 'feature-list-card'
+                  }
+                  onClick={() => handleSelectAssignee(member.userId)}
+                >
+                  <View className='flex items-center'>
+                    <MemberAvatar className='mr-3' member={member} size='sm' />
+                    <View>
+                      <Text className='feature-list-card__title'>
+                        {getMemberDisplayName(member)}
+                      </Text>
+                      {subtitle ? (
+                        <Text className='mt-1 block text-sm text-slate-500'>{subtitle}</Text>
+                      ) : null}
+                    </View>
+                  </View>
+                  <Text className='feature-list-card__meta'>
+                    {selectedAssigneeId === member.userId ? '已选中' : '点击选中'}
+                  </Text>
+                </View>
+              )
+            })}
           </View>
         ) : (
           <EmptyState

@@ -1,15 +1,18 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Button, Picker, Switch, Text, View } from '@tarojs/components'
+import { Button, Input, Picker, Switch, Text, View } from '@tarojs/components'
 import Taro from '@tarojs/taro'
 import BottomActionBar from '@/components/bottom-action-bar'
+import MemberAvatar from '@/components/member-avatar'
 import PageHero from '@/components/page-hero'
 import SectionCard from '@/components/section-card'
 import { groupApi } from '@/services/api'
 import { showErrorToast } from '@/utils/error'
+import { getMemberDisplayName, getMemberSubtitle } from '@/utils/member'
 
 interface GroupMember {
   id: number
   userId: number
+  remark?: string | null
   displayRole?: 'requester' | 'cook' | 'both'
   tagId?: number | null
   status?: 'active' | 'left' | 'removed'
@@ -21,6 +24,7 @@ interface GroupMember {
   user?: {
     id: number
     nickname?: string
+    avatar?: string
   }
   tag?: {
     id: number
@@ -35,6 +39,7 @@ interface GroupDetail {
 }
 
 interface MemberFormState {
+  remark: string
   displayRole: 'requester' | 'cook' | 'both'
   status: 'active' | 'left' | 'removed'
   canManageGroup: boolean
@@ -115,6 +120,7 @@ export default function MemberForm() {
   const [group, setGroup] = useState<GroupDetail | null>(null)
   const [member, setMember] = useState<GroupMember | null>(null)
   const [form, setForm] = useState<MemberFormState>({
+    remark: '',
     displayRole: 'cook',
     status: 'active',
     canManageGroup: false,
@@ -157,6 +163,7 @@ export default function MemberForm() {
       setGroup(data)
       setMember(currentMember)
       setForm({
+        remark: currentMember.remark || '',
         displayRole: currentMember.displayRole || 'cook',
         status: currentMember.status || 'active',
         canManageGroup: Boolean(currentMember.canManageGroup),
@@ -210,6 +217,7 @@ export default function MemberForm() {
     try {
       await groupApi.updateMember(params.groupId, params.memberId, {
         ...form,
+        remark: form.remark.trim() || null,
       })
       Taro.showToast({
         title: '已保存',
@@ -241,7 +249,8 @@ export default function MemberForm() {
     )
   }
 
-  const displayName = member.user?.nickname || member.tag?.name || '未命名成员'
+  const displayName = getMemberDisplayName(member)
+  const subtitle = getMemberSubtitle(member)
 
   return (
     <View className='page-shell page-shell--sunset px-4 py-5 pb-32'>
@@ -251,6 +260,38 @@ export default function MemberForm() {
         description={`${group?.name || '当前分组'} · 成员 ID ${member.id}`}
         tone='sunset'
       />
+
+      <SectionCard
+        title='成员资料'
+        description='分组内备注会覆盖昵称显示，头像来自对方个人中心设置。'
+        variant='accent'
+      >
+        <View className='feature-list-card feature-list-card--rose'>
+          <View className='flex items-center'>
+            <MemberAvatar className='mr-3' member={member} size='lg' />
+            <View>
+              <Text className='feature-list-card__title'>{displayName}</Text>
+              {subtitle ? (
+                <Text className='mt-1 block text-sm text-slate-500'>{subtitle}</Text>
+              ) : null}
+            </View>
+          </View>
+
+          <Text className='mt-4 block feature-list-card__meta'>分组内备注</Text>
+          <Input
+            className='mt-2 rounded-2xl bg-white/80 px-4 py-3 text-base text-slate-700'
+            maxlength={50}
+            placeholder='例如：管家、小厨、对象'
+            value={form.remark}
+            onInput={(event) =>
+              setForm((current) => ({
+                ...current,
+                remark: event.detail.value,
+              }))
+            }
+          />
+        </View>
+      </SectionCard>
 
       <SectionCard
         title='角色与状态'

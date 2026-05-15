@@ -11,6 +11,12 @@ export const authApi = {
 
 export const userApi = {
   getProfile: () => request({ url: '/users/profile' }),
+  updateProfile: (data: { nickname?: string; avatar?: string }) =>
+    request({
+      url: '/users/profile',
+      method: 'PATCH',
+      data,
+    }),
 }
 
 export const groupApi = {
@@ -45,6 +51,7 @@ export const groupApi = {
     groupId: number,
     memberId: number,
     data: {
+      remark?: string | null
       displayRole?: 'requester' | 'cook' | 'both'
       tagId?: number | null
       status?: 'active' | 'left' | 'removed'
@@ -59,6 +66,12 @@ export const groupApi = {
       url: `/groups/${groupId}/members/${memberId}`,
       method: 'PATCH',
       data,
+    }),
+  updateMyRemark: (groupId: number, remark?: string | null) =>
+    request({
+      url: `/groups/${groupId}/members/me/remark`,
+      method: 'PATCH',
+      data: { remark },
     }),
   removeMember: (groupId: number, userId: number) =>
     request({

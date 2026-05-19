@@ -1,4 +1,4 @@
 export default {
-  navigationBarTitleText: '分组详情'
+  navigationBarTitleText: '空间详情'
 }
 

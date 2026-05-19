@@ -1,4 +1,4 @@
 export default {
-  navigationBarTitleText: '标签管理'
+  navigationBarTitleText: '称谓模板'
 }
 

@@ -6,23 +6,24 @@ import PageHero from '@/components/page-hero'
 import SectionCard from '@/components/section-card'
 import StatusChip from '@/components/status-chip'
 import { orderStatusMetaMap } from '@/constants/ui'
-import { groupApi, orderApi } from '@/services/api'
+import { taskApi, workspaceApi } from '@/services/api'
 import { checkAuth, ensureAuth } from '@/utils/auth'
 import { showErrorToast } from '@/utils/error'
+import { getPreferredWorkspaceId, setPreferredWorkspaceId } from '@/utils/workspace'
 
-interface GroupItem {
+interface WorkspaceItem {
   id: number
   name: string
 }
 
-interface OrderItem {
+interface TaskItem {
   id: number
   status: keyof typeof orderStatusMetaMap
   recipe?: {
     id: number
     name: string
   }
-  group?: {
+  workspace?: {
     id: number
     name: string
   }
@@ -37,20 +38,20 @@ interface OrderItem {
 }
 
 export default function Index() {
-  const [groups, setGroups] = useState<GroupItem[]>([])
-  const [orders, setOrders] = useState<OrderItem[]>([])
+  const [workspaces, setWorkspaces] = useState<WorkspaceItem[]>([])
+  const [tasks, setTasks] = useState<TaskItem[]>([])
   const [loading, setLoading] = useState(false)
 
   const loadDashboard = useCallback(async () => {
     setLoading(true)
 
     try {
-      const [groupsData, ordersData] = await Promise.all([
-        groupApi.getList(),
-        orderApi.getList({ mine: true }),
+      const [workspacesData, tasksData] = await Promise.all([
+        workspaceApi.getList(),
+        taskApi.getList({ mine: true }),
       ])
-      setGroups(groupsData || [])
-      setOrders(ordersData || [])
+      setWorkspaces(workspacesData || [])
+      setTasks(tasksData || [])
     } catch (error) {
       showErrorToast(error, '看板加载失败')
     } finally {
@@ -82,47 +83,78 @@ export default function Index() {
     }
   })
 
-  const pendingOrders = useMemo(
+  const pendingTasks = useMemo(
     () =>
-      orders.filter((order) =>
-        ['created', 'accepted', 'cooking', 'completed'].includes(order.status),
+      tasks.filter((task) =>
+        ['created', 'accepted', 'cooking', 'completed'].includes(task.status),
       ),
-    [orders],
+    [tasks],
   )
 
-  const recentOrders = useMemo(() => orders.slice(0, 5), [orders])
+  const recentTasks = useMemo(() => tasks.slice(0, 3), [tasks])
 
-  const handleGroupClick = (groupId: number) => {
+  const activeWorkspace = useMemo(() => {
+    if (workspaces.length === 0) {
+      return null
+    }
+
+    const preferredWorkspaceId = getPreferredWorkspaceId()
+    return (
+      workspaces.find((workspace) => workspace.id === preferredWorkspaceId) ||
+      workspaces[0]
+    )
+  }, [workspaces])
+
+  const otherWorkspaces = useMemo(() => {
+    if (!activeWorkspace) {
+      return workspaces
+    }
+
+    return workspaces.filter((workspace) => workspace.id !== activeWorkspace.id)
+  }, [activeWorkspace, workspaces])
+
+  const handleWorkspaceClick = (workspaceId: number) => {
+    setPreferredWorkspaceId(workspaceId)
     Taro.navigateTo({
-      url: `/pages/group/index?id=${groupId}`,
+      url: `/pages/group/index?id=${workspaceId}`,
     })
   }
 
-  const handleOrderClick = (order: OrderItem) => {
-    if (order.id) {
+  const handleTaskClick = (task: TaskItem) => {
+    if (task.id) {
       Taro.navigateTo({
-        url: `/pages/task/index?id=${order.id}`,
+        url: `/pages/task/index?id=${task.id}`,
       })
       return
     }
 
     Taro.showToast({
-      title: '该任务缺少分组信息',
+      title: '该任务缺少空间信息',
       icon: 'none',
     })
   }
 
   const handleTaskBoardClick = () => {
-    Taro.navigateTo({
+    Taro.switchTab({
       url: '/pages/task-list/index',
     })
   }
 
-  const handleCreateGroup = async () => {
+  const handleRecipeHubClick = () => {
+    if (activeWorkspace?.id) {
+      setPreferredWorkspaceId(activeWorkspace.id)
+    }
+
+    Taro.switchTab({
+      url: '/pages/recipes/index',
+    })
+  }
+
+  const handleCreateWorkspace = async () => {
     const result = await Taro.showModal({
-      title: '新建分组',
+      title: '新建空间',
       editable: true,
-      placeholderText: '输入一个温柔的分组名',
+      placeholderText: '输入一个温柔的空间名',
       confirmText: '创建',
     })
 
@@ -133,7 +165,7 @@ export default function Index() {
     const name = result.content?.trim()
     if (!name) {
       Taro.showToast({
-        title: '请输入分组名',
+        title: '请输入空间名',
         icon: 'none',
       })
       return
@@ -141,7 +173,7 @@ export default function Index() {
 
     try {
       Taro.showLoading({ title: '创建中...' })
-      await groupApi.create(name)
+      await workspaceApi.create(name)
       Taro.hideLoading()
       Taro.showToast({
         title: '创建成功',
@@ -158,70 +190,114 @@ export default function Index() {
     <View className='page-shell px-4 py-5'>
       <PageHero
         badge='Princess Order'
-        title='今天吃什么，先把节奏理顺'
-        description='首页只保留决策入口：先看待推进的任务，再进入你的空间继续发单、接单和协作。'
+        title='今天吃什么，先从入口做对'
+        description='首页现在只负责总览和分流：先看待推进的任务，再进入菜谱库或当前空间继续协作。'
         stats={
           <View className='hero-stat-grid'>
             <View className='hero-stat-card'>
               <Text className='hero-stat-card__label'>待跟进任务</Text>
-              <Text className='hero-stat-card__value'>{pendingOrders.length}</Text>
-              <Text className='hero-stat-card__hint'>优先处理正在推进中的单</Text>
+              <Text className='hero-stat-card__value'>{pendingTasks.length}</Text>
+              <Text className='hero-stat-card__hint'>优先处理正在推进中的任务</Text>
             </View>
             <View className='hero-stat-card'>
-              <Text className='hero-stat-card__label'>我的分组</Text>
-              <Text className='hero-stat-card__value'>{groups.length}</Text>
-              <Text className='hero-stat-card__hint'>每个分组都是一套协作厨房</Text>
+              <Text className='hero-stat-card__label'>我的空间</Text>
+              <Text className='hero-stat-card__value'>{workspaces.length}</Text>
+              <Text className='hero-stat-card__hint'>空间只做协作上下文，不再和任务混在一起</Text>
             </View>
           </View>
         }
         actions={
-          <Button className='app-button app-button--primary' onClick={handleCreateGroup}>
-            新建分组
-          </Button>
+          <View className='space-y-3'>
+            <Button className='app-button app-button--primary' onClick={handleRecipeHubClick}>
+              进入菜谱库
+            </Button>
+            <Button className='app-button app-button--ghost' onClick={handleTaskBoardClick}>
+              查看任务看板
+            </Button>
+          </View>
         }
       />
 
       <SectionCard
-        title='我的任务'
-        description='只保留最近的关键任务，避免首页沦为任务列表的缩略版。'
+        title='当前空间'
+        description='空间保留为协作上下文层：首页只突出一个主空间，减少来回选择的成本。'
         actions={
-          <Button className='app-button app-button--ghost app-button--mini' onClick={handleTaskBoardClick}>
-            查看全部
+          <Button className='app-button app-button--secondary app-button--mini' onClick={handleCreateWorkspace}>
+            新建空间
           </Button>
         }
         variant='accent'
       >
         {loading ? (
           <View className='py-8 text-center text-gray-500'>加载中...</View>
-        ) : recentOrders.length === 0 ? (
+        ) : !activeWorkspace ? (
           <EmptyState
             tone='rose'
+            title='还没有空间'
+            description='先创建一个家庭空间，再把成员、菜谱和任务都收进来。'
+          />
+        ) : (
+          <View className='feature-list-card feature-list-card--amber'>
+            <Text className='feature-list-card__meta'>Preferred Workspace</Text>
+            <Text className='feature-list-card__title'>{activeWorkspace.name}</Text>
+            <Text className='feature-list-card__description'>
+              从这里进入成员、称谓模板、邀请码和发起任务的工作台。
+            </Text>
+            <View className='mt-3 space-y-3'>
+              <Button
+                className='app-button app-button--primary app-button--mini'
+                onClick={() => handleWorkspaceClick(activeWorkspace.id)}
+              >
+                打开空间
+              </Button>
+              <Button className='app-button app-button--ghost app-button--mini' onClick={handleRecipeHubClick}>
+                在菜谱页查看当前空间菜谱
+              </Button>
+            </View>
+          </View>
+        )}
+      </SectionCard>
+
+      <SectionCard
+        title='最近任务'
+        description='首页只保留少量最近任务，真正推进状态请直接进入任务 tab。'
+        actions={
+          <Button className='app-button app-button--ghost app-button--mini' onClick={handleTaskBoardClick}>
+            查看全部
+          </Button>
+        }
+        variant='soft'
+      >
+        {loading ? (
+          <View className='py-8 text-center text-gray-500'>加载中...</View>
+        ) : recentTasks.length === 0 ? (
+          <EmptyState
+            tone='gray'
             title='还没有任务'
-            description='去分组里发起第一单，把今天想吃的安排起来。'
+            description='等你从空间里发起第一笔任务，这里就会出现最近进度。'
           />
         ) : (
           <View>
-            {recentOrders.map((order) => {
-              const statusMeta = orderStatusMetaMap[order.status]
+            {recentTasks.map((task) => {
+              const statusMeta = orderStatusMetaMap[task.status]
+              const workspaceName = task.workspace?.name || '未命名空间'
 
               return (
                 <View
-                  key={order.id}
+                  key={task.id}
                   className='feature-list-card feature-list-card--rose'
-                  onClick={() => handleOrderClick(order)}
+                  onClick={() => handleTaskClick(task)}
                 >
                   <View className='mb-2 flex items-center justify-between'>
                     <Text className='feature-list-card__title'>
-                      {order.recipe?.name || `任务 #${order.id}`}
+                      {task.recipe?.name || `任务 #${task.id}`}
                     </Text>
                     <StatusChip label={statusMeta.label} tone={statusMeta.tone} />
                   </View>
-                  <Text className='feature-list-card__description'>
-                    分组：{order.group?.name || '未命名分组'}
-                  </Text>
+                  <Text className='feature-list-card__description'>空间：{workspaceName}</Text>
                   <Text className='feature-list-card__meta'>
-                    发起人：{order.creator?.nickname || '未命名'} / 执行人：
-                    {order.assignee?.nickname || '未命名'}
+                    发起人：{task.creator?.nickname || '未命名'} / 执行人：
+                    {task.assignee?.nickname || '未命名'}
                   </Text>
                 </View>
               )
@@ -230,31 +306,22 @@ export default function Index() {
         )}
       </SectionCard>
 
-      <SectionCard
-        title='我的分组'
-        description='把常用空间做成更明确的入口卡，不再和任务信息长得一样。'
-        meta={`${groups.length} 个空间`}
-        variant='soft'
-      >
-        {loading ? (
-          <View className='py-8 text-center text-gray-500'>加载中...</View>
-        ) : groups.length === 0 ? (
-          <EmptyState
-            tone='gray'
-            title='还没有分组'
-            description='先创建一个小空间，成员、菜谱和点餐任务都会围绕它展开。'
-          />
-        ) : (
+      {otherWorkspaces.length > 0 ? (
+        <SectionCard
+          title='其他空间'
+          description='如果你同时在多个家庭或小组里协作，可以从这里快速切换。'
+          meta={`${otherWorkspaces.length} 个`}
+        >
           <View>
-            {groups.map((group) => (
+            {otherWorkspaces.map((workspace) => (
               <View
-                key={group.id}
+                key={workspace.id}
                 className='feature-list-card'
-                onClick={() => handleGroupClick(group.id)}
+                onClick={() => handleWorkspaceClick(workspace.id)}
               >
                 <View className='flex items-center justify-between'>
                   <View>
-                    <Text className='feature-list-card__title'>{group.name}</Text>
+                    <Text className='feature-list-card__title'>{workspace.name}</Text>
                     <Text className='feature-list-card__description'>
                       查看成员、菜谱、邀请方式和点餐入口
                     </Text>
@@ -264,8 +331,8 @@ export default function Index() {
               </View>
             ))}
           </View>
-        )}
-      </SectionCard>
+        </SectionCard>
+      ) : null}
     </View>
   )
 }

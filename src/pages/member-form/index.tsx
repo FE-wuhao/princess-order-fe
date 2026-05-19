@@ -5,22 +5,22 @@ import BottomActionBar from '@/components/bottom-action-bar'
 import MemberAvatar from '@/components/member-avatar'
 import PageHero from '@/components/page-hero'
 import SectionCard from '@/components/section-card'
-import { groupApi } from '@/services/api'
+import { workspaceApi } from '@/services/api'
 import { showErrorToast } from '@/utils/error'
 import { getMemberDisplayName, getMemberSubtitle } from '@/utils/member'
 
-interface GroupMember {
+interface WorkspaceMember {
   id: number
   userId: number
   remark?: string | null
   displayRole?: 'requester' | 'cook' | 'both'
   tagId?: number | null
   status?: 'active' | 'left' | 'removed'
-  canManageGroup?: boolean
+  canManageWorkspace?: boolean
   canManageMembers?: boolean
   canManageRecipes?: boolean
-  canCreateOrder?: boolean
-  canAcceptOrder?: boolean
+  canCreateTask?: boolean
+  canAcceptTask?: boolean
   user?: {
     id: number
     nickname?: string
@@ -32,21 +32,21 @@ interface GroupMember {
   } | null
 }
 
-interface GroupDetail {
+interface WorkspaceDetail {
   id: number
   name: string
-  members: GroupMember[]
+  members: WorkspaceMember[]
 }
 
 interface MemberFormState {
   remark: string
   displayRole: 'requester' | 'cook' | 'both'
   status: 'active' | 'left' | 'removed'
-  canManageGroup: boolean
+  canManageWorkspace: boolean
   canManageMembers: boolean
   canManageRecipes: boolean
-  canCreateOrder: boolean
-  canAcceptOrder: boolean
+  canCreateTask: boolean
+  canAcceptTask: boolean
 }
 
 const roleOptions: Array<{ label: string; value: MemberFormState['displayRole'] }> = [
@@ -64,19 +64,19 @@ const statusOptions: Array<{ label: string; value: MemberFormState['status'] }> 
 const permissionItems: Array<{
   key: keyof Pick<
     MemberFormState,
-    | 'canManageGroup'
+    | 'canManageWorkspace'
     | 'canManageMembers'
     | 'canManageRecipes'
-    | 'canCreateOrder'
-    | 'canAcceptOrder'
+    | 'canCreateTask'
+    | 'canAcceptTask'
   >
   title: string
   description: string
 }> = [
   {
-    key: 'canManageGroup',
-    title: '管理分组',
-    description: '可刷新邀请码、调整分组级配置',
+    key: 'canManageWorkspace',
+    title: '管理空间',
+    description: '可刷新邀请码、调整空间级配置',
   },
   {
     key: 'canManageMembers',
@@ -89,12 +89,12 @@ const permissionItems: Array<{
     description: '可新增、编辑和归档菜谱',
   },
   {
-    key: 'canCreateOrder',
-    title: '发起点餐',
+    key: 'canCreateTask',
+    title: '发起任务',
     description: '可创建新的点餐任务',
   },
   {
-    key: 'canAcceptOrder',
+    key: 'canAcceptTask',
     title: '接受制作',
     description: '可被指定为任务执行人',
   },
@@ -117,17 +117,17 @@ const statusIndexByValue = statusOptions.reduce<Record<string, number>>(
 )
 
 export default function MemberForm() {
-  const [group, setGroup] = useState<GroupDetail | null>(null)
-  const [member, setMember] = useState<GroupMember | null>(null)
+  const [workspace, setWorkspace] = useState<WorkspaceDetail | null>(null)
+  const [member, setMember] = useState<WorkspaceMember | null>(null)
   const [form, setForm] = useState<MemberFormState>({
     remark: '',
     displayRole: 'cook',
     status: 'active',
-    canManageGroup: false,
+    canManageWorkspace: false,
     canManageMembers: false,
     canManageRecipes: true,
-    canCreateOrder: false,
-    canAcceptOrder: true,
+    canCreateTask: false,
+    canAcceptTask: true,
   })
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -135,19 +135,19 @@ export default function MemberForm() {
   const params = useMemo(() => {
     const routerParams = Taro.getCurrentInstance().router?.params
     return {
-      groupId: parseInt(routerParams?.groupId || '0'),
+      workspaceId: parseInt(routerParams?.workspaceId || '0'),
       memberId: parseInt(routerParams?.memberId || '0'),
     }
   }, [])
 
   const loadMember = useCallback(async () => {
-    if (!params.groupId || !params.memberId) {
+    if (!params.workspaceId || !params.memberId) {
       return
     }
 
     setLoading(true)
     try {
-      const data = await groupApi.getDetail(params.groupId)
+      const data = await workspaceApi.getDetail(params.workspaceId)
       const currentMember = (data?.members || []).find(
         (item) => item.id === params.memberId,
       )
@@ -160,24 +160,24 @@ export default function MemberForm() {
         return
       }
 
-      setGroup(data)
+      setWorkspace(data)
       setMember(currentMember)
       setForm({
         remark: currentMember.remark || '',
         displayRole: currentMember.displayRole || 'cook',
         status: currentMember.status || 'active',
-        canManageGroup: Boolean(currentMember.canManageGroup),
+        canManageWorkspace: Boolean(currentMember.canManageWorkspace),
         canManageMembers: Boolean(currentMember.canManageMembers),
         canManageRecipes: currentMember.canManageRecipes !== false,
-        canCreateOrder: Boolean(currentMember.canCreateOrder),
-        canAcceptOrder: currentMember.canAcceptOrder !== false,
+        canCreateTask: Boolean(currentMember.canCreateTask),
+        canAcceptTask: currentMember.canAcceptTask !== false,
       })
     } catch (error) {
       showErrorToast(error, '加载失败')
     } finally {
       setLoading(false)
     }
-  }, [params.groupId, params.memberId])
+  }, [params.workspaceId, params.memberId])
 
   useEffect(() => {
     loadMember()
@@ -186,11 +186,11 @@ export default function MemberForm() {
   const updatePermission = (
     key: keyof Pick<
       MemberFormState,
-      | 'canManageGroup'
+      | 'canManageWorkspace'
       | 'canManageMembers'
       | 'canManageRecipes'
-      | 'canCreateOrder'
-      | 'canAcceptOrder'
+      | 'canCreateTask'
+      | 'canAcceptTask'
     >,
     value: boolean,
   ) => {
@@ -205,7 +205,7 @@ export default function MemberForm() {
       return
     }
 
-    if (!params.groupId || !params.memberId) {
+    if (!params.workspaceId || !params.memberId) {
       Taro.showToast({
         title: '参数错误',
         icon: 'none',
@@ -215,7 +215,7 @@ export default function MemberForm() {
 
     setSaving(true)
     try {
-      await groupApi.updateMember(params.groupId, params.memberId, {
+      await workspaceApi.updateMember(params.workspaceId, params.memberId, {
         ...form,
         remark: form.remark.trim() || null,
       })
@@ -257,13 +257,13 @@ export default function MemberForm() {
       <PageHero
         badge='Member Setting'
         title={displayName}
-        description={`${group?.name || '当前分组'} · 成员 ID ${member.id}`}
+        description={`${workspace?.name || '当前空间'} · 成员 ID ${member.id}`}
         tone='sunset'
       />
 
       <SectionCard
         title='成员资料'
-        description='分组内备注会覆盖昵称显示，头像来自对方个人中心设置。'
+        description='空间内备注会覆盖昵称显示，头像来自对方个人中心设置。'
         variant='accent'
       >
         <View className='feature-list-card feature-list-card--rose'>
@@ -277,7 +277,7 @@ export default function MemberForm() {
             </View>
           </View>
 
-          <Text className='mt-4 block feature-list-card__meta'>分组内备注</Text>
+          <Text className='mt-4 block feature-list-card__meta'>空间内备注</Text>
           <Input
             className='mt-2 rounded-2xl bg-white/80 px-4 py-3 text-base text-slate-700'
             maxlength={50}

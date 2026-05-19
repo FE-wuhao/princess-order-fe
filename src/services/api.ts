@@ -1,5 +1,42 @@
 import { request } from '../utils/request'
 
+const normalizeWorkspaceDetail = (workspace: any) => {
+  const activeInvite = (workspace?.invites || []).find(
+    (invite: any) => invite.status === 'active',
+  )
+
+  return {
+    ...workspace,
+    inviteCode: activeInvite?.inviteCode || null,
+    inviteExpiredAt: activeInvite?.expiredAt || null,
+    members: (workspace?.memberships || []).map((membership: any) => ({
+      id: membership.id,
+      userId: membership.userId,
+      remark: membership.remark,
+      displayRole: membership.displayRole,
+      canCreateTask: membership.canCreateTask,
+      canAcceptTask: membership.canAcceptTask,
+      canManageWorkspace: membership.canManageWorkspace,
+      canManageMembers: membership.canManageMembers,
+      canManageRecipes: membership.canManageRecipes,
+      user: membership.user,
+      tag: membership.roleTemplate
+        ? {
+            id: membership.roleTemplate.id,
+            name: membership.roleTemplate.name,
+          }
+        : null,
+    })),
+    recipes: workspace?.recipes || [],
+  }
+}
+
+const normalizeTask = (task: any) => ({
+  ...task,
+  workspace: task?.workspace || null,
+  recipeSnapshot: task?.recipeSnapshot || null,
+})
+
 export const authApi = {
   wxLogin: (code: string, userInfo?: { nickname?: string; avatar?: string }) =>
     request({
@@ -31,73 +68,68 @@ export const userApi = {
     }),
 }
 
-export const groupApi = {
-  getList: () => request({ url: '/groups' }),
-  getDetail: (id: number) => request({ url: `/groups/${id}` }),
+export const workspaceApi = {
+  getList: () => request({ url: '/workspaces' }),
+  getDetail: async (id: number) =>
+    normalizeWorkspaceDetail(await request({ url: `/workspaces/${id}` })),
   create: (name: string) =>
-    request({ url: '/groups', method: 'POST', data: { name } }),
-  createInvite: (groupId: number, expiredAt?: string) =>
+    request({ url: '/workspaces', method: 'POST', data: { name } }),
+  createInvite: (workspaceId: number, expiredAt?: string) =>
     request({
-      url: `/groups/${groupId}/invites`,
+      url: `/workspaces/${workspaceId}/invites`,
       method: 'POST',
       data: expiredAt ? { expiredAt } : undefined,
     }),
   joinByInvite: (inviteCode: string) =>
     request({
-      url: '/groups/join',
+      url: '/invites/join',
       method: 'POST',
       data: { inviteCode },
     }),
-  addMember: (
-    groupId: number,
-    userId: number,
-    displayRole?: 'requester' | 'cook' | 'both',
-    tagId?: number,
-  ) =>
-    request({
-      url: `/groups/${groupId}/members`,
-      method: 'POST',
-      data: { userId, displayRole, tagId },
-    }),
   updateMember: (
-    groupId: number,
+    workspaceId: number,
     memberId: number,
     data: {
       remark?: string | null
-      displayRole?: 'requester' | 'cook' | 'both'
-      tagId?: number | null
+      displayRole?: 'requester' | 'cook' | 'both' | 'neutral'
+      roleTemplateId?: number | null
       status?: 'active' | 'left' | 'removed'
-      canManageGroup?: boolean
+      canManageWorkspace?: boolean
       canManageMembers?: boolean
       canManageRecipes?: boolean
-      canCreateOrder?: boolean
-      canAcceptOrder?: boolean
+      canCreateTask?: boolean
+      canAcceptTask?: boolean
     },
   ) =>
     request({
-      url: `/groups/${groupId}/members/${memberId}`,
+      url: `/workspaces/${workspaceId}/members/${memberId}`,
       method: 'PATCH',
-      data,
+      data: {
+        remark: data.remark,
+        displayRole: data.displayRole,
+        roleTemplateId: data.roleTemplateId,
+        status: data.status,
+        canManageWorkspace: data.canManageWorkspace,
+        canManageMembers: data.canManageMembers,
+        canManageRecipes: data.canManageRecipes,
+        canCreateTask: data.canCreateTask,
+        canAcceptTask: data.canAcceptTask,
+      },
     }),
-  updateMyRemark: (groupId: number, remark?: string | null) =>
+  updateMyRemark: (workspaceId: number, remark?: string | null) =>
     request({
-      url: `/groups/${groupId}/members/me/remark`,
+      url: `/workspaces/${workspaceId}/members/me/remark`,
       method: 'PATCH',
       data: { remark },
-    }),
-  removeMember: (groupId: number, userId: number) =>
-    request({
-      url: `/groups/${groupId}/members/${userId}`,
-      method: 'DELETE',
     }),
 }
 
 export const recipeApi = {
-  getList: (groupId: number) => request({ url: `/groups/${groupId}/recipes` }),
-  getDetail: (groupId: number, id: number) =>
-    request({ url: `/groups/${groupId}/recipes/${id}` }),
+  getList: (workspaceId: number) =>
+    request({ url: `/recipes?workspaceId=${workspaceId}` }),
+  getDetail: (_workspaceId: number, id: number) => request({ url: `/recipes/${id}` }),
   create: (
-    groupId: number,
+    workspaceId: number,
     data: {
       name: string
       description?: string
@@ -108,12 +140,12 @@ export const recipeApi = {
     },
   ) =>
     request({
-      url: `/groups/${groupId}/recipes`,
+      url: `/recipes`,
       method: 'POST',
-      data,
+      data: { workspaceId, ...data },
     }),
   update: (
-    groupId: number,
+    workspaceId: number,
     id: number,
     data: {
       name?: string
@@ -126,22 +158,22 @@ export const recipeApi = {
     },
   ) =>
     request({
-      url: `/groups/${groupId}/recipes/${id}`,
+      url: `/recipes/${id}`,
       method: 'PATCH',
       data,
     }),
-  archive: (groupId: number, id: number) =>
+  archive: (workspaceId: number, id: number) =>
     request({
-      url: `/groups/${groupId}/recipes/${id}/archive`,
+      url: `/recipes/${id}/archive`,
       method: 'PATCH',
     }),
-  delete: (groupId: number, id: number) =>
+  delete: (workspaceId: number, id: number) =>
     request({
-      url: `/groups/${groupId}/recipes/${id}`,
+      url: `/recipes/${id}`,
       method: 'DELETE',
     }),
   replaceIngredients: (
-    groupId: number,
+    workspaceId: number,
     recipeId: number,
     ingredients: Array<{
       name: string
@@ -151,12 +183,12 @@ export const recipeApi = {
     }>,
   ) =>
     request({
-      url: `/groups/${groupId}/recipes/${recipeId}/ingredients`,
+      url: `/recipes/${recipeId}/ingredients`,
       method: 'PUT',
       data: { ingredients },
     }),
   replaceMethods: (
-    groupId: number,
+    workspaceId: number,
     recipeId: number,
     methods: Array<{
       content: string
@@ -165,42 +197,42 @@ export const recipeApi = {
     }>,
   ) =>
     request({
-      url: `/groups/${groupId}/recipes/${recipeId}/methods`,
+      url: `/recipes/${recipeId}/steps`,
       method: 'PUT',
       data: { methods },
     }),
-  addMethod: (groupId: number, recipeId: number, content: string) =>
+  addMethod: (workspaceId: number, recipeId: number, content: string) =>
     request({
-      url: `/groups/${groupId}/recipes/${recipeId}/methods`,
+      url: `/recipes/${recipeId}/steps`,
       method: 'POST',
       data: { content },
     }),
   updateMethod: (
-    groupId: number,
+    workspaceId: number,
     recipeId: number,
     methodId: number,
     content: string,
   ) =>
     request({
-      url: `/groups/${groupId}/recipes/${recipeId}/methods/${methodId}`,
+      url: `/recipes/${recipeId}/steps/${methodId}`,
       method: 'PUT',
       data: { content },
     }),
-  deleteMethod: (groupId: number, recipeId: number, methodId: number) =>
+  deleteMethod: (workspaceId: number, recipeId: number, methodId: number) =>
     request({
-      url: `/groups/${groupId}/recipes/${recipeId}/methods/${methodId}`,
+      url: `/recipes/${recipeId}/steps/${methodId}`,
       method: 'DELETE',
     }),
-  addAiMethods: (groupId: number, recipeId: number) =>
+  addAiMethods: (workspaceId: number, recipeId: number) =>
     request({
-      url: `/groups/${groupId}/recipes/${recipeId}/ai-methods`,
+      url: `/recipes/${recipeId}/ai-steps`,
       method: 'POST',
     }),
 }
 
-export const orderApi = {
+export const taskApi = {
   create: (
-    groupId: number,
+    workspaceId: number,
     recipeId: number,
     assigneeId: number,
     extra?: {
@@ -210,60 +242,68 @@ export const orderApi = {
     },
   ) =>
     request({
-      url: '/orders',
+      url: '/tasks',
       method: 'POST',
-      data: { groupId, recipeId, assigneeId, ...extra },
+      data: {
+        workspaceId,
+        recipeId,
+        assigneeMembershipId: assigneeId,
+        ...extra,
+      },
     }),
   getList: (params?: {
-    groupId?: number
+    workspaceId?: number
     status?: string
     mine?: boolean
     role?: 'creator' | 'assignee'
   }) => {
     const queryParams: Record<string, string> = {}
 
-    if (params?.groupId) queryParams.groupId = String(params.groupId)
+    if (params?.workspaceId) queryParams.workspaceId = String(params.workspaceId)
     if (params?.status) queryParams.status = params.status
     if (params?.mine !== undefined) queryParams.mine = String(params.mine)
     if (params?.role) queryParams.role = params.role
 
     const query = new URLSearchParams(queryParams).toString()
-    return request({ url: `/orders${query ? `?${query}` : ''}` })
+    return request({ url: `/tasks${query ? `?${query}` : ''}` }).then((tasks) =>
+      (tasks || []).map(normalizeTask),
+    )
   },
-  getDetail: (id: number) => request({ url: `/orders/${id}` }),
+  getDetail: (id: number) =>
+    request({ url: `/tasks/${id}` }).then(normalizeTask),
   accept: (id: number, remark?: string) =>
     request({
-      url: `/orders/${id}/accept`,
+      url: `/tasks/${id}/accept`,
       method: 'POST',
       data: remark ? { remark } : undefined,
     }),
   reject: (id: number, reason: string) =>
     request({
-      url: `/orders/${id}/reject`,
+      url: `/tasks/${id}/reject`,
       method: 'POST',
       data: { reason },
     }),
   start: (id: number, remark?: string) =>
     request({
-      url: `/orders/${id}/start`,
+      url: `/tasks/${id}/start`,
       method: 'POST',
       data: remark ? { remark } : undefined,
     }),
   complete: (id: number, remark?: string) =>
     request({
-      url: `/orders/${id}/complete`,
+      url: `/tasks/${id}/complete`,
       method: 'POST',
       data: remark ? { remark } : undefined,
     }),
   confirm: (id: number, remark?: string) =>
     request({
-      url: `/orders/${id}/confirm`,
+      url: `/tasks/${id}/confirm`,
       method: 'POST',
       data: remark ? { remark } : undefined,
     }),
   cancel: (id: number, reason?: string) =>
     request({
-      url: `/orders/${id}/cancel`,
+      url: `/tasks/${id}/cancel`,
       method: 'POST',
       data: reason ? { reason } : undefined,
     }),
@@ -279,37 +319,40 @@ export const messageApi = {
 }
 
 export const tagApi = {
-  getList: (groupId: number, roleType?: 'requester' | 'cook' | 'neutral') => {
-    const query = roleType ? `?roleType=${roleType}` : ''
-    return request({ url: `/groups/${groupId}/tags${query}` })
-  },
+  getList: (
+    workspaceId: number,
+    roleType?: 'requester' | 'cook' | 'both' | 'neutral',
+  ) =>
+    request({ url: `/workspaces/${workspaceId}/role-templates` }).then((items) =>
+      roleType ? (items || []).filter((item: any) => item.roleType === roleType) : items,
+    ),
   create: (
-    groupId: number,
+    workspaceId: number,
     name: string,
-    roleType: 'requester' | 'cook' | 'neutral',
+    roleType: 'requester' | 'cook' | 'both' | 'neutral',
   ) =>
     request({
-      url: `/groups/${groupId}/tags`,
+      url: `/workspaces/${workspaceId}/role-templates`,
       method: 'POST',
       data: { name, roleType },
     }),
   update: (
-    groupId: number,
+    workspaceId: number,
     id: number,
     data: {
       name?: string
-      roleType?: 'requester' | 'cook' | 'neutral'
+      roleType?: 'requester' | 'cook' | 'both' | 'neutral'
       isDefault?: boolean
     },
   ) =>
     request({
-      url: `/groups/${groupId}/tags/${id}`,
+      url: `/workspaces/${workspaceId}/role-templates/${id}`,
       method: 'PATCH',
       data,
     }),
-  delete: (groupId: number, id: number) =>
+  delete: (workspaceId: number, id: number) =>
     request({
-      url: `/groups/${groupId}/tags/${id}`,
+      url: `/workspaces/${workspaceId}/role-templates/${id}`,
       method: 'DELETE',
     }),
 }

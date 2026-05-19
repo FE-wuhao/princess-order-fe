@@ -7,7 +7,7 @@ import PageHero from '@/components/page-hero'
 import SectionCard from '@/components/section-card'
 import StatusChip from '@/components/status-chip'
 import { NotificationStatus, notificationStatusMetaMap, notificationTitleMap } from '@/constants/ui'
-import { groupApi, messageApi, userApi } from '@/services/api'
+import { messageApi, userApi, workspaceApi } from '@/services/api'
 import { hideLoadingAndShowError, showErrorToast } from '@/utils/error'
 import { ensureAuth, logout } from '@/utils/auth'
 import { isH5 } from '@/utils/platform'
@@ -38,7 +38,7 @@ export default function Profile() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [inviteCodeDraft, setInviteCodeDraft] = useState('')
   const [showInviteForm, setShowInviteForm] = useState(false)
-  const [joiningGroup, setJoiningGroup] = useState(false)
+  const [joiningWorkspace, setJoiningWorkspace] = useState(false)
 
   const loadProfile = useCallback(async () => {
     setLoading(true)
@@ -172,14 +172,14 @@ export default function Profile() {
       return
     }
 
-    if (joiningGroup) {
+    if (joiningWorkspace) {
       return
     }
 
-    setJoiningGroup(true)
+    setJoiningWorkspace(true)
     try {
       Taro.showLoading({ title: '加入中...' })
-      await groupApi.joinByInvite(inviteCode)
+      await workspaceApi.joinByInvite(inviteCode)
       Taro.hideLoading()
       setInviteCodeDraft('')
       setShowInviteForm(false)
@@ -190,11 +190,11 @@ export default function Profile() {
     } catch (error) {
       hideLoadingAndShowError(error, '加入失败')
     } finally {
-      setJoiningGroup(false)
+      setJoiningWorkspace(false)
     }
   }
 
-  const handleJoinGroup = async () => {
+  const handleJoinWorkspace = async () => {
     if (isH5) {
       setShowInviteForm(true)
       return
@@ -227,7 +227,7 @@ export default function Profile() {
       <PageHero
         badge='Profile'
         title={profileTitle}
-        description='设置头像和昵称后，分组成员列表、任务详情都会同步展示。'
+        description='设置头像和昵称后，空间成员列表、任务详情都会同步展示。'
         tone='sky'
         stats={
           <View className='hero-stat-grid'>
@@ -239,7 +239,7 @@ export default function Profile() {
             <View className='hero-stat-card'>
               <Text className='hero-stat-card__label'>账号状态</Text>
               <Text className='hero-stat-card__value'>{user ? '已登录' : '未登录'}</Text>
-              <Text className='hero-stat-card__hint'>登录后可加入分组并接单</Text>
+              <Text className='hero-stat-card__hint'>登录后可加入空间并接单</Text>
             </View>
           </View>
         }
@@ -269,7 +269,7 @@ export default function Profile() {
             <View className='profile-avatar-content'>
               <Text className='feature-list-card__title'>{profileTitle}</Text>
               <Text className='profile-avatar-hint'>
-                头像会保存到服务器，分组里其他成员也能看到。
+                头像会保存到服务器，空间里其他成员也能看到。
               </Text>
             </View>
           </View>
@@ -279,7 +279,7 @@ export default function Profile() {
             className='mt-2 rounded-2xl bg-white/80 px-4 py-3 text-base text-slate-700'
             type='nickname'
             maxlength={50}
-            placeholder='给自己起一个分组里容易识别的名字'
+            placeholder='给自己起一个空间里容易识别的名字'
             value={nicknameDraft}
             onInput={(event) => setNicknameDraft(event.detail.value)}
             onBlur={(event) => setNicknameDraft(event.detail.value.trim())}
@@ -299,11 +299,11 @@ export default function Profile() {
       </SectionCard>
 
       <SectionCard
-        title='加入分组'
-        description='向群主拿到邀请码后，直接在这里加入对应分组。'
+        title='加入空间'
+        description='向空间管理员拿到邀请码后，直接在这里加入对应空间。'
         actions={
           !showInviteForm ? (
-            <Button className='app-button app-button--primary app-button--mini' onClick={handleJoinGroup}>
+            <Button className='app-button app-button--primary app-button--mini' onClick={handleJoinWorkspace}>
               输入邀请码
             </Button>
           ) : null
@@ -313,7 +313,7 @@ export default function Profile() {
         <View className='feature-list-card feature-list-card--sky'>
           <Text className='feature-list-card__title'>通过邀请码加入</Text>
           <Text className='feature-list-card__description'>
-            加入成功后回到首页或分组页刷新，就能看到新空间。
+            加入成功后回到首页或空间页刷新，就能看到新空间。
           </Text>
           <Text className='feature-list-card__meta'>邀请码通常是 6 位大写字母数字组合</Text>
           {showInviteForm ? (
@@ -327,15 +327,15 @@ export default function Profile() {
               <View className='flex gap-2'>
                 <Button
                   className='app-button app-button--primary app-button--mini'
-                  loading={joiningGroup}
-                  disabled={joiningGroup}
+                  loading={joiningWorkspace}
+                  disabled={joiningWorkspace}
                   onClick={() => submitInviteCode(inviteCodeDraft)}
                 >
                   加入
                 </Button>
                 <Button
                   className='app-button app-button--ghost app-button--mini'
-                  disabled={joiningGroup}
+                  disabled={joiningWorkspace}
                   onClick={() => {
                     setShowInviteForm(false)
                     setInviteCodeDraft('')

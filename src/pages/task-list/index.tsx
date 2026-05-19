@@ -6,17 +6,17 @@ import PageHero from '@/components/page-hero'
 import SectionCard from '@/components/section-card'
 import StatusChip from '@/components/status-chip'
 import { OrderStatus, orderStatusMetaMap } from '@/constants/ui'
-import { orderApi } from '@/services/api'
+import { taskApi } from '@/services/api'
 import { showErrorToast } from '@/utils/error'
 
-interface OrderItem {
+interface TaskItem {
   id: number
   status: OrderStatus
   recipe?: {
     id: number
     name: string
   }
-  group?: {
+  workspace?: {
     id: number
     name: string
   }
@@ -39,7 +39,7 @@ const boardDefinitions: Array<{
   {
     key: 'waiting',
     title: '待响应',
-    description: '刚发出的单和刚接住的单，都在这里盯进度。',
+    description: '刚发出的任务和刚接住的任务，都在这里盯进度。',
     statuses: ['created', 'accepted'],
   },
   {
@@ -63,15 +63,15 @@ const boardDefinitions: Array<{
 ]
 
 export default function TaskList() {
-  const [orders, setOrders] = useState<OrderItem[]>([])
+  const [tasks, setTasks] = useState<TaskItem[]>([])
   const [loading, setLoading] = useState(false)
 
-  const loadOrders = useCallback(async () => {
+  const loadTasks = useCallback(async () => {
     setLoading(true)
 
     try {
-      const data = await orderApi.getList({ mine: true })
-      setOrders(data || [])
+      const data = await taskApi.getList({ mine: true })
+      setTasks(data || [])
     } catch (error) {
       showErrorToast(error, '任务列表加载失败')
     } finally {
@@ -80,33 +80,33 @@ export default function TaskList() {
   }, [])
 
   useEffect(() => {
-    loadOrders()
-  }, [loadOrders])
+    loadTasks()
+  }, [loadTasks])
 
   useDidShow(() => {
-    loadOrders()
+    loadTasks()
   })
 
   const boardSections = useMemo(
     () =>
       boardDefinitions.map((board) => ({
         ...board,
-        orders: orders.filter((order) => board.statuses.includes(order.status)),
+        tasks: tasks.filter((task) => board.statuses.includes(task.status)),
       })),
-    [orders],
+    [tasks],
   )
 
   const pendingCount = useMemo(
     () =>
-      orders.filter((order) =>
-        ['created', 'accepted', 'cooking', 'completed'].includes(order.status),
+      tasks.filter((task) =>
+        ['created', 'accepted', 'cooking', 'completed'].includes(task.status),
       ).length,
-    [orders],
+    [tasks],
   )
 
-  const handleTaskClick = (orderId: number) => {
+  const handleTaskClick = (taskId: number) => {
     Taro.navigateTo({
-      url: `/pages/task/index?id=${orderId}`,
+      url: `/pages/task/index?id=${taskId}`,
     })
   }
 
@@ -126,13 +126,13 @@ export default function TaskList() {
             </View>
             <View className='hero-stat-card'>
               <Text className='hero-stat-card__label'>总任务数</Text>
-              <Text className='hero-stat-card__value'>{orders.length}</Text>
+              <Text className='hero-stat-card__value'>{tasks.length}</Text>
               <Text className='hero-stat-card__hint'>所有历史任务都在这里收口</Text>
             </View>
           </View>
         }
         actions={
-          <Button className='app-button app-button--ghost' onClick={loadOrders}>
+          <Button className='app-button app-button--ghost' onClick={loadTasks}>
             刷新任务列表
           </Button>
         }
@@ -149,10 +149,10 @@ export default function TaskList() {
               key={section.key}
               title={section.title}
               description={section.description}
-              meta={`${section.orders.length} 条`}
+              meta={`${section.tasks.length} 条`}
               variant='soft'
             >
-              {section.orders.length === 0 ? (
+              {section.tasks.length === 0 ? (
                 <EmptyState
                   tone='sky'
                   title='这一栏现在是空的'
@@ -160,27 +160,28 @@ export default function TaskList() {
                 />
               ) : (
                 <View>
-                  {section.orders.map((order) => {
-                    const statusMeta = orderStatusMetaMap[order.status]
+                  {section.tasks.map((task) => {
+                    const statusMeta = orderStatusMetaMap[task.status]
+                    const workspaceName = task.workspace?.name || '未命名空间'
 
                     return (
                       <View
-                        key={order.id}
+                        key={task.id}
                         className='feature-list-card feature-list-card--sky'
-                        onClick={() => handleTaskClick(order.id)}
+                        onClick={() => handleTaskClick(task.id)}
                       >
                         <View className='mb-2 flex items-center justify-between'>
                           <Text className='feature-list-card__title'>
-                            {order.recipe?.name || `任务 #${order.id}`}
+                            {task.recipe?.name || `任务 #${task.id}`}
                           </Text>
                           <StatusChip label={statusMeta.label} tone={statusMeta.tone} />
                         </View>
                         <Text className='feature-list-card__description'>
-                          分组：{order.group?.name || '未命名分组'}
+                          空间：{workspaceName}
                         </Text>
                         <Text className='feature-list-card__meta'>
-                          发起人：{order.creator?.nickname || '未命名'} / 执行人：
-                          {order.assignee?.nickname || '未命名'}
+                          发起人：{task.creator?.nickname || '未命名'} / 执行人：
+                          {task.assignee?.nickname || '未命名'}
                         </Text>
                       </View>
                     )

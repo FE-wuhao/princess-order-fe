@@ -6,17 +6,18 @@ import EmptyState from '@/components/empty-state'
 import MemberAvatar from '@/components/member-avatar'
 import PageHero from '@/components/page-hero'
 import SectionCard from '@/components/section-card'
-import { groupApi, userApi } from '@/services/api'
+import { userApi, workspaceApi } from '@/services/api'
 import { showErrorToast } from '@/utils/error'
 import { getMemberDisplayName, getMemberSubtitle } from '@/utils/member'
+import { setPreferredWorkspaceId } from '@/utils/workspace'
 
-interface GroupMember {
+interface WorkspaceMember {
   id: number
   userId: number
   remark?: string | null
   displayRole?: 'requester' | 'cook' | 'both'
-  canCreateOrder?: boolean
-  canAcceptOrder?: boolean
+  canCreateTask?: boolean
+  canAcceptTask?: boolean
   user?: {
     id: number
     nickname?: string
@@ -28,23 +29,23 @@ interface GroupMember {
   } | null
 }
 
-interface GroupRecipe {
+interface WorkspaceRecipe {
   id: number
   name: string
   status?: 'active' | 'archived'
   description?: string | null
 }
 
-interface GroupDetail {
+interface WorkspaceDetail {
   id: number
   name: string
   inviteCode?: string | null
   inviteExpiredAt?: string | null
-  members: GroupMember[]
-  recipes: GroupRecipe[]
+  members: WorkspaceMember[]
+  recipes: WorkspaceRecipe[]
 }
 
-const roleLabelMap: Record<NonNullable<GroupMember['displayRole']>, string> = {
+const roleLabelMap: Record<NonNullable<WorkspaceMember['displayRole']>, string> = {
   requester: '点餐人',
   cook: '制作者',
   both: '双角色',
@@ -70,28 +71,29 @@ const formatInviteExpiry = (value?: string | null) => {
 }
 
 export default function Group() {
-  const [group, setGroup] = useState<GroupDetail | null>(null)
+  const [workspace, setWorkspace] = useState<WorkspaceDetail | null>(null)
   const [loading, setLoading] = useState(false)
   const [currentUserId, setCurrentUserId] = useState(0)
   const [myRemarkDraft, setMyRemarkDraft] = useState('')
   const [savingMyRemark, setSavingMyRemark] = useState(false)
 
-  const groupId = useMemo(() => {
+  const workspaceId = useMemo(() => {
     const params = Taro.getCurrentInstance().router?.params
-    return parseInt(params?.id || '0')
+    return parseInt(params?.workspaceId || params?.id || '0')
   }, [])
 
-  const loadGroup = useCallback(async () => {
+  const loadWorkspace = useCallback(async () => {
     setLoading(true)
     try {
       const [data, profile] = await Promise.all([
-        groupApi.getDetail(groupId),
+        workspaceApi.getDetail(workspaceId),
         userApi.getProfile(),
       ])
-      setGroup(data)
+      setPreferredWorkspaceId(workspaceId)
+      setWorkspace(data)
       setCurrentUserId(profile?.id || 0)
       const myMember = (data?.members || []).find(
-        (member: GroupMember) => member.userId === profile?.id,
+        (member: WorkspaceMember) => member.userId === profile?.id,
       )
       setMyRemarkDraft(myMember?.remark || '')
     } catch (error) {
@@ -99,49 +101,49 @@ export default function Group() {
     } finally {
       setLoading(false)
     }
-  }, [groupId])
+  }, [workspaceId])
 
   useEffect(() => {
-    loadGroup()
-  }, [loadGroup])
+    loadWorkspace()
+  }, [loadWorkspace])
 
   const activeRecipes = useMemo(
-    () => (group?.recipes || []).filter((recipe) => recipe.status !== 'archived'),
-    [group],
+    () => (workspace?.recipes || []).filter((recipe) => recipe.status !== 'archived'),
+    [workspace],
   )
 
   const orderableMembers = useMemo(
-    () => (group?.members || []).filter((member) => member.canAcceptOrder),
-    [group],
+    () => (workspace?.members || []).filter((member) => member.canAcceptTask),
+    [workspace],
   )
 
   const handleRecipeClick = (recipeId: number) => {
     Taro.navigateTo({
-      url: `/pages/recipe/index?id=${recipeId}&groupId=${groupId}`,
+      url: `/pages/recipe/index?id=${recipeId}&workspaceId=${workspaceId}`,
     })
   }
 
   const handleCreateRecipe = () => {
     Taro.navigateTo({
-      url: `/pages/recipe-form/index?groupId=${groupId}`,
+      url: `/pages/recipe-form/index?workspaceId=${workspaceId}`,
     })
   }
 
-  const handleOrderClick = () => {
+  const handleTaskComposerClick = () => {
     Taro.navigateTo({
-      url: `/pages/order/index?groupId=${groupId}`,
-    })
-  }
-
-  const handleTagClick = () => {
-    Taro.navigateTo({
-      url: `/pages/tag/index?groupId=${groupId}`,
+      url: `/pages/order/index?workspaceId=${workspaceId}`,
     })
   }
 
   const handleMemberClick = (memberId: number) => {
     Taro.navigateTo({
-      url: `/pages/member-form/index?groupId=${groupId}&memberId=${memberId}`,
+      url: `/pages/member-form/index?workspaceId=${workspaceId}&memberId=${memberId}`,
+    })
+  }
+
+  const handleRoleTemplateClick = () => {
+    Taro.navigateTo({
+      url: `/pages/tag/index?workspaceId=${workspaceId}`,
     })
   }
 
@@ -153,13 +155,13 @@ export default function Group() {
     setSavingMyRemark(true)
     try {
       Taro.showLoading({ title: '保存中...' })
-      await groupApi.updateMyRemark(groupId, myRemarkDraft.trim() || null)
+      await workspaceApi.updateMyRemark(workspaceId, myRemarkDraft.trim() || null)
       Taro.hideLoading()
       Taro.showToast({
         title: '备注已保存',
         icon: 'success',
       })
-      await loadGroup()
+      await loadWorkspace()
     } catch (error) {
       Taro.hideLoading()
       showErrorToast(error, '保存失败')
@@ -171,9 +173,9 @@ export default function Group() {
   const handleRefreshInviteCode = async () => {
     try {
       Taro.showLoading({ title: '生成中...' })
-      const invite = await groupApi.createInvite(groupId)
+      const invite = await workspaceApi.createInvite(workspaceId)
       Taro.hideLoading()
-      setGroup((current) =>
+      setWorkspace((current) =>
         current
           ? {
               ...current,
@@ -193,7 +195,7 @@ export default function Group() {
   }
 
   const handleCopyInviteCode = async () => {
-    if (!group?.inviteCode) {
+    if (!workspace?.inviteCode) {
       Taro.showToast({
         title: '暂无邀请码',
         icon: 'none',
@@ -203,7 +205,7 @@ export default function Group() {
 
     try {
       await Taro.setClipboardData({
-        data: group.inviteCode,
+        data: workspace.inviteCode,
       })
       Taro.showToast({
         title: '已复制邀请码',
@@ -218,28 +220,28 @@ export default function Group() {
     return <View className='p-5'>加载中...</View>
   }
 
-  if (!group) {
-    return <View className='p-5'>分组不存在</View>
+  if (!workspace) {
+    return <View className='p-5'>空间不存在</View>
   }
 
   return (
     <View className='page-shell page-shell--sunset px-4 py-5 pb-32'>
       <PageHero
-        badge='Group Space'
-        title={group.name}
-        description={`成员 ${group.members?.length || 0} 人，可用菜谱 ${activeRecipes.length} 个，可接单成员 ${orderableMembers.length} 人。`}
+        badge='Workspace'
+        title={workspace.name}
+        description={`成员 ${workspace.members?.length || 0} 人，可用菜谱 ${activeRecipes.length} 个，可接任务成员 ${orderableMembers.length} 人。`}
         tone='sunset'
         stats={
           <View className='hero-stat-grid'>
             <View className='hero-stat-card'>
               <Text className='hero-stat-card__label'>协作成员</Text>
-              <Text className='hero-stat-card__value'>{group.members?.length || 0}</Text>
-              <Text className='hero-stat-card__hint'>按角色管理发单和接单权限</Text>
+              <Text className='hero-stat-card__value'>{workspace.members?.length || 0}</Text>
+              <Text className='hero-stat-card__hint'>按角色管理发任务和接任务权限</Text>
             </View>
             <View className='hero-stat-card'>
               <Text className='hero-stat-card__label'>可用菜谱</Text>
               <Text className='hero-stat-card__value'>{activeRecipes.length}</Text>
-              <Text className='hero-stat-card__hint'>常做菜集中沉淀，发单更快</Text>
+              <Text className='hero-stat-card__hint'>常做菜集中沉淀，发任务更快</Text>
             </View>
           </View>
         }
@@ -247,9 +249,12 @@ export default function Group() {
 
       <SectionCard
         title='加入方式'
-        description='邀请码是这个分组最重要的外部入口，单独做成重点模块。'
+        description='邀请码是这个空间最重要的外部入口，单独做成重点模块。'
         actions={
-          <Button className='app-button app-button--secondary app-button--mini' onClick={handleRefreshInviteCode}>
+          <Button
+            className='app-button app-button--secondary app-button--mini'
+            onClick={handleRefreshInviteCode}
+          >
             刷新邀请码
           </Button>
         }
@@ -257,14 +262,17 @@ export default function Group() {
       >
         <View className='feature-list-card feature-list-card--amber'>
           <Text className='feature-list-card__meta'>Invite Code</Text>
-          <Text className='page-hero__title'>{group.inviteCode || '暂未生成'}</Text>
+          <Text className='page-hero__title'>{workspace.inviteCode || '暂未生成'}</Text>
           <Text className='feature-list-card__description'>
-            {group.inviteExpiredAt
-              ? `有效期至 ${formatInviteExpiry(group.inviteExpiredAt)}，过期后你再次打开分组页会自动更新`
+            {workspace.inviteExpiredAt
+              ? `有效期至 ${formatInviteExpiry(workspace.inviteExpiredAt)}，过期后你再次打开空间页会自动更新`
               : '刷新一次就会生成新的邀请码，适合分享给新成员。'}
           </Text>
           <View className='mt-3'>
-            <Button className='app-button app-button--ghost app-button--mini' onClick={handleCopyInviteCode}>
+            <Button
+              className='app-button app-button--ghost app-button--mini'
+              onClick={handleCopyInviteCode}
+            >
               复制邀请码
             </Button>
           </View>
@@ -273,18 +281,21 @@ export default function Group() {
 
       <SectionCard
         title='成员与角色'
-        description='展示头像、分组备注和角色权限；管理员可点成员进入详细设置。'
+        description='展示头像、空间备注和角色权限；管理员可点成员进入详细设置。'
         actions={
-          <Button className='app-button app-button--ghost app-button--mini' onClick={handleTagClick}>
-            标签管理
+          <Button
+            className='app-button app-button--ghost app-button--mini'
+            onClick={handleRoleTemplateClick}
+          >
+            称谓模板
           </Button>
         }
       >
         {currentUserId ? (
           <View className='feature-list-card feature-list-card--sky mb-3'>
-            <Text className='feature-list-card__title'>我在本组的称呼</Text>
+            <Text className='feature-list-card__title'>我在本空间的称呼</Text>
             <Text className='feature-list-card__description'>
-              只影响当前分组里的展示，例如「管家」「小厨」。
+              只影响当前空间里的展示，例如「管家」「小厨」。
             </Text>
             <Input
               className='mt-3 rounded-2xl bg-white/80 px-4 py-3 text-base text-slate-700'
@@ -307,7 +318,7 @@ export default function Group() {
         ) : null}
 
         <View>
-          {group.members?.map((member) => {
+          {workspace.members?.map((member) => {
             const subtitle = getMemberSubtitle(member)
 
             return (
@@ -333,8 +344,8 @@ export default function Group() {
                   </Text>
                 </View>
                 <Text className='feature-list-card__description'>
-                  {member.canCreateOrder ? '可发单' : '不可发单'} /{' '}
-                  {member.canAcceptOrder ? '可接单' : '不可接单'}
+                  {member.canCreateTask ? '可发任务' : '不可发任务'} /{' '}
+                  {member.canAcceptTask ? '可接任务' : '不可接任务'}
                 </Text>
                 <Text className='feature-list-card__meta'>点击调整角色、权限和成员备注</Text>
               </View>
@@ -366,7 +377,7 @@ export default function Group() {
                 <Text className='feature-list-card__description'>
                   {recipe.description || '进入查看做法、食材和 AI 补全结果'}
                 </Text>
-                <Text className='feature-list-card__meta'>点进详情继续编辑和发起点餐</Text>
+                <Text className='feature-list-card__meta'>点进详情继续编辑和发起任务</Text>
               </View>
             ))}
           </View>
@@ -374,7 +385,7 @@ export default function Group() {
           <EmptyState
             tone='amber'
             title='暂无菜谱'
-            description='建议先补一个常做菜，再发起任务，整个分组的协作效率会更高。'
+            description='建议先补一个常做菜，再发起任务，整个空间的协作效率会更高。'
           />
         )}
       </SectionCard>
@@ -383,9 +394,9 @@ export default function Group() {
         <Button
           className='app-button app-button--primary'
           disabled={activeRecipes.length === 0 || orderableMembers.length === 0}
-          onClick={handleOrderClick}
+          onClick={handleTaskComposerClick}
         >
-          发起点餐任务
+          发起任务
         </Button>
       </BottomActionBar>
     </View>

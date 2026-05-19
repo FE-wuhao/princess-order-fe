@@ -38,11 +38,11 @@ const createEmptyMethod = (): RecipeMethodFormItem => ({
 })
 
 export default function RecipeForm() {
-  const { groupId, recipeId } = useMemo(() => {
+  const { workspaceId, recipeId } = useMemo(() => {
     const params = Taro.getCurrentInstance().router?.params
 
     return {
-      groupId: parseInt(params?.groupId || '0'),
+      workspaceId: parseInt(params?.workspaceId || '0'),
       recipeId: parseInt(params?.id || '0'),
     }
   }, [])
@@ -71,7 +71,7 @@ export default function RecipeForm() {
   )
 
   useEffect(() => {
-    if (!isEdit || !groupId) {
+    if (!isEdit || !workspaceId) {
       return
     }
 
@@ -79,7 +79,7 @@ export default function RecipeForm() {
       setLoading(true)
 
       try {
-        const recipe = await recipeApi.getDetail(groupId, recipeId)
+        const recipe = await recipeApi.getDetail(workspaceId, recipeId)
         setName(recipe?.name || '')
         setDescription(recipe?.description || '')
         setDifficulty(recipe?.difficulty || 'normal')
@@ -112,7 +112,7 @@ export default function RecipeForm() {
     }
 
     loadRecipe()
-  }, [groupId, isEdit, recipeId])
+  }, [workspaceId, isEdit, recipeId])
 
   const updateIngredient = (
     index: number,
@@ -194,9 +194,9 @@ export default function RecipeForm() {
       return
     }
 
-    if (!groupId) {
+    if (!workspaceId) {
       Taro.showToast({
-        title: '分组信息异常',
+        title: '空间信息异常',
         icon: 'none',
       })
       return
@@ -233,8 +233,8 @@ export default function RecipeForm() {
       }
 
       const recipe = isEdit
-        ? await recipeApi.update(groupId, recipeId, payload)
-        : await recipeApi.create(groupId, payload)
+        ? await recipeApi.update(workspaceId, recipeId, payload)
+        : await recipeApi.create(workspaceId, payload)
       const targetRecipeId = recipe?.id || recipeId
 
       if (!targetRecipeId) {
@@ -242,8 +242,8 @@ export default function RecipeForm() {
       }
 
       await Promise.all([
-        recipeApi.replaceIngredients(groupId, targetRecipeId, getPreparedIngredients()),
-        recipeApi.replaceMethods(groupId, targetRecipeId, preparedMethods),
+        recipeApi.replaceIngredients(workspaceId, targetRecipeId, getPreparedIngredients()),
+        recipeApi.replaceMethods(workspaceId, targetRecipeId, preparedMethods),
       ])
 
       Taro.hideLoading()
@@ -254,7 +254,7 @@ export default function RecipeForm() {
 
       setTimeout(() => {
         Taro.redirectTo({
-          url: `/pages/recipe/index?id=${targetRecipeId}&groupId=${groupId}`,
+          url: `/pages/recipe/index?id=${targetRecipeId}&workspaceId=${workspaceId}`,
         })
       }, 400)
     } catch (error) {
@@ -284,7 +284,7 @@ export default function RecipeForm() {
     Taro.showLoading({ title: '归档中...' })
 
     try {
-      await recipeApi.archive(groupId, recipeId)
+      await recipeApi.archive(workspaceId, recipeId)
       Taro.hideLoading()
       Taro.showToast({
         title: '已归档',
@@ -292,7 +292,7 @@ export default function RecipeForm() {
       })
       setTimeout(() => {
         Taro.redirectTo({
-          url: `/pages/group/index?id=${groupId}`,
+          url: `/pages/group/index?id=${workspaceId}`,
         })
       }, 400)
     } catch (error) {

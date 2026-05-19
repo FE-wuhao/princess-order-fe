@@ -1,3 +1,10 @@
+const tabPages = [
+  'pages/index/index',
+  'pages/recipes/index',
+  'pages/task-list/index',
+  'pages/profile/index',
+]
+
 const sharedPages = [
   'pages/group/index',
   'pages/member-form/index',
@@ -5,15 +12,13 @@ const sharedPages = [
   'pages/recipe-form/index',
   'pages/order/index',
   'pages/task/index',
-  'pages/task-list/index',
   'pages/tag/index',
-  'pages/profile/index',
 ]
 
 const pages =
   process.env.TARO_ENV === 'h5'
-    ? ['pages/login/index', 'pages/index/index', ...sharedPages]
-    : ['pages/index/index', 'pages/login/index', ...sharedPages]
+    ? ['pages/login/index', ...tabPages, ...sharedPages]
+    : [...tabPages, 'pages/login/index', ...sharedPages]
 
 export default {
   pages,
@@ -31,9 +36,21 @@ export default {
     list: [
       {
         pagePath: 'pages/index/index',
-        text: '分组',
+        text: '首页',
         iconPath: 'assets/icons/home.png',
         selectedIconPath: 'assets/icons/home-active.png',
+      },
+      {
+        pagePath: 'pages/recipes/index',
+        text: '菜谱',
+        iconPath: 'assets/icons/recipe.png',
+        selectedIconPath: 'assets/icons/recipe-active.png',
+      },
+      {
+        pagePath: 'pages/task-list/index',
+        text: '任务',
+        iconPath: 'assets/icons/task.png',
+        selectedIconPath: 'assets/icons/task-active.png',
       },
       {
         pagePath: 'pages/profile/index',

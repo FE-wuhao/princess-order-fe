@@ -37,25 +37,25 @@ export default function Recipe() {
   const [recipe, setRecipe] = useState<Recipe | null>(null)
   const [loading, setLoading] = useState(false)
 
-  const { recipeId, groupId } = useMemo(() => {
+  const { recipeId, workspaceId } = useMemo(() => {
     const params = Taro.getCurrentInstance().router?.params
     return {
       recipeId: parseInt(params?.id || '0'),
-      groupId: parseInt(params?.groupId || '0'),
+      workspaceId: parseInt(params?.workspaceId || '0'),
     }
   }, [])
 
   const loadRecipe = useCallback(async () => {
     setLoading(true)
     try {
-      const data = await recipeApi.getDetail(groupId, recipeId)
+      const data = await recipeApi.getDetail(workspaceId, recipeId)
       setRecipe(data)
     } catch (error) {
       showErrorToast(error, '加载失败')
     } finally {
       setLoading(false)
     }
-  }, [recipeId])
+  }, [recipeId, workspaceId])
 
   useEffect(() => {
     loadRecipe()
@@ -64,7 +64,7 @@ export default function Recipe() {
   const handleAddAiMethods = async () => {
     try {
       Taro.showLoading({ title: '检索中...' })
-      await recipeApi.addAiMethods(groupId, recipeId)
+      await recipeApi.addAiMethods(workspaceId, recipeId)
       Taro.hideLoading()
       Taro.showToast({
         title: '添加成功',
@@ -79,7 +79,7 @@ export default function Recipe() {
 
   const handleEdit = () => {
     Taro.navigateTo({
-      url: `/pages/recipe-form/index?id=${recipeId}&groupId=${groupId}`,
+      url: `/pages/recipe-form/index?id=${recipeId}&workspaceId=${workspaceId}`,
     })
   }
 

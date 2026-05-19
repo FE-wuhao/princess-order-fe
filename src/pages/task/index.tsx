@@ -11,7 +11,7 @@ import {
   notificationTitleMap,
   orderStatusMetaMap,
 } from '@/constants/ui'
-import { messageApi, orderApi, userApi } from '@/services/api'
+import { messageApi, taskApi, userApi } from '@/services/api'
 import { showErrorToast } from '@/utils/error'
 
 interface UserSummary {
@@ -19,7 +19,7 @@ interface UserSummary {
   nickname?: string
 }
 
-interface OrderDetail {
+interface TaskDetail {
   id: number
   status:
     | 'created'
@@ -33,19 +33,17 @@ interface OrderDetail {
   remark?: string | null
   rejectReason?: string | null
   cancelReason?: string | null
-  createdAt?: string
-  acceptedAt?: string | null
-  startedAt?: string | null
-  completedAt?: string | null
-  confirmedAt?: string | null
   recipe?: {
     id: number
     name: string
   }
-  group?: {
+  recipeSnapshot?: {
+    recipeName?: string
+  } | null
+  workspace?: {
     id: number
     name: string
-  }
+  } | null
   creator?: UserSummary
   assignee?: UserSummary
   events?: Array<{
@@ -81,7 +79,7 @@ interface OrderDetail {
   }>
 }
 
-const eventLabelMap: Record<NonNullable<OrderDetail['events']>[number]['eventType'], string> = {
+const eventLabelMap: Record<NonNullable<TaskDetail['events']>[number]['eventType'], string> = {
   created: '创建任务',
   accepted: '接受任务',
   rejected: '拒绝任务',
@@ -93,13 +91,13 @@ const eventLabelMap: Record<NonNullable<OrderDetail['events']>[number]['eventTyp
 }
 
 export default function Task() {
-  const [order, setOrder] = useState<OrderDetail | null>(null)
+  const [task, setTask] = useState<TaskDetail | null>(null)
   const [currentUser, setCurrentUser] = useState<UserSummary | null>(null)
   const [loading, setLoading] = useState(false)
   const [acting, setActing] = useState(false)
   const [retryingLogId, setRetryingLogId] = useState<number | null>(null)
 
-  const orderId = useMemo(() => {
+  const taskId = useMemo(() => {
     const params = Taro.getCurrentInstance().router?.params
     return parseInt(params?.id || '0')
   }, [])
@@ -107,25 +105,25 @@ export default function Task() {
   const loadTask = useCallback(async () => {
     setLoading(true)
     try {
-      const [orderData, profile] = await Promise.all([
-        orderApi.getDetail(orderId),
+      const [taskData, profile] = await Promise.all([
+        taskApi.getDetail(taskId),
         userApi.getProfile(),
       ])
-      setOrder(orderData)
+      setTask(taskData)
       setCurrentUser(profile)
     } catch (error) {
       showErrorToast(error, '任务加载失败')
     } finally {
       setLoading(false)
     }
-  }, [orderId])
+  }, [taskId])
 
   useEffect(() => {
     loadTask()
   }, [loadTask])
 
-  const isCreator = order?.creator?.id === currentUser?.id
-  const isAssignee = order?.assignee?.id === currentUser?.id
+  const isCreator = task?.creator?.id === currentUser?.id
+  const isAssignee = task?.assignee?.id === currentUser?.id
 
   const promptText = async (title: string, placeholderText: string) => {
     const result = await Taro.showModal({
@@ -162,7 +160,7 @@ export default function Task() {
   }
 
   const handleAccept = () => {
-    runAction(() => orderApi.accept(orderId), '已接单')
+    runAction(() => taskApi.accept(taskId), '已接任务')
   }
 
   const handleReject = async () => {
@@ -170,7 +168,7 @@ export default function Task() {
     if (reason === null || !reason) {
       return
     }
-    runAction(() => orderApi.reject(orderId, reason), '已拒绝')
+    runAction(() => taskApi.reject(taskId, reason), '已拒绝')
   }
 
   const handleStart = async () => {
@@ -178,7 +176,7 @@ export default function Task() {
     if (remark === null) {
       return
     }
-    runAction(() => orderApi.start(orderId, remark || undefined), '已开始')
+    runAction(() => taskApi.start(taskId, remark || undefined), '已开始')
   }
 
   const handleComplete = async () => {
@@ -186,7 +184,7 @@ export default function Task() {
     if (remark === null) {
       return
     }
-    runAction(() => orderApi.complete(orderId, remark || undefined), '已完成')
+    runAction(() => taskApi.complete(taskId, remark || undefined), '已完成')
   }
 
   const handleConfirm = async () => {
@@ -194,7 +192,7 @@ export default function Task() {
     if (remark === null) {
       return
     }
-    runAction(() => orderApi.confirm(orderId, remark || undefined), '已确认')
+    runAction(() => taskApi.confirm(taskId, remark || undefined), '已确认')
   }
 
   const handleCancel = async () => {
@@ -202,7 +200,7 @@ export default function Task() {
     if (reason === null) {
       return
     }
-    runAction(() => orderApi.cancel(orderId, reason || undefined), '已取消')
+    runAction(() => taskApi.cancel(taskId, reason || undefined), '已取消')
   }
 
   const handleRetryNotification = async (logId: number) => {
@@ -225,90 +223,81 @@ export default function Task() {
   }
 
   const actionButtons = useMemo(() => {
-    if (!order) {
+    if (!task) {
       return []
     }
 
-    const actions: Array<{ key: string; text: string; onClick: () => void; type?: 'primary' | 'default' | 'warn' }> = []
+    const actions: Array<{
+      key: string
+      text: string
+      onClick: () => void
+      type?: 'primary' | 'default' | 'warn'
+    }> = []
 
-    if (isAssignee && order.status === 'created') {
+    if (isAssignee && task.status === 'created') {
       actions.push({ key: 'accept', text: '接受', onClick: handleAccept, type: 'primary' })
       actions.push({ key: 'reject', text: '拒绝', onClick: handleReject, type: 'warn' })
     }
 
-    if (isAssignee && order.status === 'accepted') {
+    if (isAssignee && task.status === 'accepted') {
       actions.push({ key: 'start', text: '开始制作', onClick: handleStart, type: 'primary' })
     }
 
-    if (isAssignee && ['accepted', 'cooking'].includes(order.status)) {
+    if (isAssignee && ['accepted', 'cooking'].includes(task.status)) {
       actions.push({ key: 'complete', text: '提交完成', onClick: handleComplete, type: 'primary' })
     }
 
-    if (isCreator && order.status === 'completed') {
+    if (isCreator && task.status === 'completed') {
       actions.push({ key: 'confirm', text: '确认完成', onClick: handleConfirm, type: 'primary' })
     }
 
-    if (isCreator && ['created', 'accepted', 'cooking'].includes(order.status)) {
+    if (isCreator && ['created', 'accepted', 'cooking'].includes(task.status)) {
       actions.push({ key: 'cancel', text: '取消任务', onClick: handleCancel, type: 'warn' })
     }
 
     return actions
-  }, [order, isAssignee, isCreator])
+  }, [task, isAssignee, isCreator])
 
   if (loading) {
     return <View className='p-5'>加载中...</View>
   }
 
-  if (!order) {
+  if (!task) {
     return <View className='p-5'>任务不存在</View>
   }
 
-  const orderStatusMeta = orderStatusMetaMap[order.status]
+  const orderStatusMeta = orderStatusMetaMap[task.status]
+  const taskTitle = task.recipeSnapshot?.recipeName || task.recipe?.name || `任务 #${task.id}`
+  const workspaceName = task.workspace?.name || '未命名空间'
 
   return (
     <View className='page-shell page-shell--sky px-4 py-5 pb-32'>
       <View className='section-card section-card--accent'>
         <View className='mb-3 flex items-center justify-between'>
-          <Text className='text-xl font-bold text-gray-900'>
-            {order.recipe?.name || `任务 #${order.id}`}
-          </Text>
+          <Text className='text-xl font-bold text-gray-900'>{taskTitle}</Text>
           <StatusChip label={orderStatusMeta.label} tone={orderStatusMeta.tone} size='md' />
         </View>
-        <Text className='block text-sm text-gray-600'>
-          分组：{order.group?.name || '未命名分组'}
-        </Text>
+        <Text className='block text-sm text-gray-600'>空间：{workspaceName}</Text>
         <Text className='mt-1 block text-sm text-gray-600'>
-          发起人：{order.creator?.nickname || '未命名'} / 执行人：
-          {order.assignee?.nickname || '未命名'}
+          发起人：{task.creator?.nickname || '未命名'} / 执行人：
+          {task.assignee?.nickname || '未命名'}
         </Text>
-        {order.remark ? (
+        {task.remark ? (
           <View className='mt-4 rounded-2xl bg-sky-50 px-4 py-3'>
-            <Text className='block text-xs uppercase tracking-wider text-sky-700'>
-              备注
-            </Text>
-            <Text className='mt-2 block text-sm leading-6 text-gray-700'>
-              {order.remark}
-            </Text>
+            <Text className='block text-xs uppercase tracking-wider text-sky-700'>备注</Text>
+            <Text className='mt-2 block text-sm leading-6 text-gray-700'>{task.remark}</Text>
           </View>
         ) : null}
-        {order.rejectReason ? (
+        {task.rejectReason ? (
           <View className='mt-4 rounded-2xl bg-rose-50 px-4 py-3'>
-            <Text className='block text-xs uppercase tracking-wider text-rose-700'>
-              拒绝原因
-            </Text>
-            <Text className='mt-2 block text-sm leading-6 text-gray-700'>
-              {order.rejectReason}
-            </Text>
+            <Text className='block text-xs uppercase tracking-wider text-rose-700'>拒绝原因</Text>
+            <Text className='mt-2 block text-sm leading-6 text-gray-700'>{task.rejectReason}</Text>
           </View>
         ) : null}
-        {order.cancelReason ? (
+        {task.cancelReason ? (
           <View className='mt-4 rounded-2xl bg-gray-100 px-4 py-3'>
-            <Text className='block text-xs uppercase tracking-wider text-gray-600'>
-              取消原因
-            </Text>
-            <Text className='mt-2 block text-sm leading-6 text-gray-700'>
-              {order.cancelReason}
-            </Text>
+            <Text className='block text-xs uppercase tracking-wider text-gray-600'>取消原因</Text>
+            <Text className='mt-2 block text-sm leading-6 text-gray-700'>{task.cancelReason}</Text>
           </View>
         ) : null}
       </View>
@@ -317,17 +306,15 @@ export default function Task() {
         title='任务时间线'
         description='把关键动作和备注按顺序收好，方便快速回顾整笔任务。'
       >
-        {order.events && order.events.length > 0 ? (
+        {task.events && task.events.length > 0 ? (
           <View>
-            {order.events.map((event) => (
+            {task.events.map((event) => (
               <View key={event.id} className='feature-list-card feature-list-card--sky'>
                 <View className='flex items-center justify-between'>
                   <Text className='text-sm font-medium text-gray-900'>
                     {eventLabelMap[event.eventType]}
                   </Text>
-                  <Text className='text-xs text-gray-500'>
-                    {event.createdAt || '暂无'}
-                  </Text>
+                  <Text className='text-xs text-gray-500'>{event.createdAt || '暂无'}</Text>
                 </View>
                 <Text className='mt-1 block text-xs text-gray-500'>
                   操作人：{event.operator?.nickname || '系统'}
@@ -354,7 +341,7 @@ export default function Task() {
           <EmptyState
             tone='sky'
             title='暂无事件记录'
-            description='任务时间线会在有人接单、开始制作、完成或确认后自动补齐。'
+            description='任务时间线会在有人接任务、开始制作、完成或确认后自动补齐。'
           />
         )}
       </SectionCard>
@@ -364,9 +351,9 @@ export default function Task() {
         description='系统通知的发送状态、模板和异常信息都在这里查看。'
         variant='soft'
       >
-        {order.notificationLogs && order.notificationLogs.length > 0 ? (
+        {task.notificationLogs && task.notificationLogs.length > 0 ? (
           <View>
-            {order.notificationLogs.map((log) => (
+            {task.notificationLogs.map((log) => (
               <View key={log.id} className='feature-list-card'>
                 <View className='flex items-center justify-between'>
                   <Text className='text-sm font-medium text-gray-900'>
@@ -377,16 +364,12 @@ export default function Task() {
                     tone={notificationStatusMetaMap[log.status as NotificationStatus].tone}
                   />
                 </View>
-                <Text className='mt-1 block text-xs text-gray-500'>
-                  模板：{log.templateCode}
-                </Text>
+                <Text className='mt-1 block text-xs text-gray-500'>模板：{log.templateCode}</Text>
                 <Text className='mt-1 block text-xs text-gray-500'>
                   创建：{log.createdAt || '暂无'} / 发送：{log.sentAt || '未发送'}
                 </Text>
                 {log.errorMessage ? (
-                  <Text className='mt-2 block text-sm text-rose-500'>
-                    错误：{log.errorMessage}
-                  </Text>
+                  <Text className='mt-2 block text-sm text-rose-500'>错误：{log.errorMessage}</Text>
                 ) : null}
                 {log.status === 'failed' ? (
                   <View className='mt-3'>
@@ -406,7 +389,7 @@ export default function Task() {
           <EmptyState
             tone='gray'
             title='还没有通知记录'
-            description='当系统尝试发送发单、接单、完成或超时通知时，这里会自动出现记录。'
+            description='当系统尝试发送发任务、接任务、完成或超时通知时，这里会自动出现记录。'
           />
         )}
       </SectionCard>

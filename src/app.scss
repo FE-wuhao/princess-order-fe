@@ -1,5 +1,5 @@
-@use './styles/ui-tokens.scss';
-@use './styles/ui-patterns.scss';
+@use "./styles/ui-tokens.scss";
+@use "./styles/ui-patterns.scss";
 
 page,
 html,
@@ -380,7 +380,12 @@ body,
 }
 
 .bg-gradient-to-br {
-  background-image: linear-gradient(135deg, #fef3c7 0%, #ffe4e6 55%, #ffffff 100%);
+  background-image: linear-gradient(
+    135deg,
+    #fef3c7 0%,
+    #ffe4e6 55%,
+    #ffffff 100%
+  );
 }
 
 .from-amber-100,
@@ -565,6 +570,51 @@ body,
 
 .w-20 {
   width: 80px;
+}
+
+.profile-avatar-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.profile-avatar-trigger,
+taro-button-core.profile-avatar-trigger {
+  flex: 0 0 80px;
+  width: 80px;
+  min-width: 80px;
+  height: 80px;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 9999px;
+  background: transparent;
+  box-sizing: border-box;
+}
+
+.profile-avatar-trigger::after,
+taro-button-core.profile-avatar-trigger::after {
+  border: 0;
+}
+
+.profile-avatar-trigger taro-image-core,
+.profile-avatar-trigger taro-view-core {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.profile-avatar-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.profile-avatar-hint {
+  display: block;
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 14px;
+  line-height: 20px;
 }
 
 /* H5：覆盖 Taro 默认按钮，保证 app-button 系列样式生效 */

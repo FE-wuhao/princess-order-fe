@@ -14,6 +14,7 @@ $archiveName = "princess-order-h5-{0}.tar.gz" -f ([guid]::NewGuid().ToString("N"
 $deployCacheDir = Join-Path $projectRoot ".deploy-cache"
 $archivePath = Join-Path $deployCacheDir $archiveName
 $remoteArchivePath = "/tmp/$archiveName"
+$distIndexPath = Join-Path $distDir "index.html"
 
 $sshOptions = @(
   "-o", "BatchMode=yes",
@@ -32,6 +33,66 @@ function Get-TarExecutable {
     return $systemTar
   }
   return "tar.exe"
+}
+
+function Get-IndexAssetUrls {
+  param([string]$IndexPath)
+
+  if (-not (Test-Path $IndexPath)) {
+    throw "H5 index not found: $IndexPath"
+  }
+
+  $content = Get-Content -Raw $IndexPath
+  $matches = [regex]::Matches($content, '(?:src|href)="(?<url>[^"]+\.(?:js|css))"')
+  $urls = @()
+
+  foreach ($match in $matches) {
+    $urls += $match.Groups['url'].Value
+  }
+
+  return $urls | Select-Object -Unique
+}
+
+function Resolve-HealthTargetUrl {
+  param(
+    [string]$BaseUrl,
+    [string]$RelativeOrAbsolutePath
+  )
+
+  if ($RelativeOrAbsolutePath -match '^https?://') {
+    return $RelativeOrAbsolutePath
+  }
+
+  $trimmedBase = $BaseUrl.TrimEnd('/')
+  $normalizedPath = if ($RelativeOrAbsolutePath.StartsWith('/')) {
+    $RelativeOrAbsolutePath
+  } else {
+    "/$RelativeOrAbsolutePath"
+  }
+
+  return "$trimmedBase$normalizedPath"
+}
+
+function Invoke-HealthProbe {
+  param(
+    [string]$Url,
+    [ValidateSet('html', 'asset')]
+    [string]$Kind
+  )
+
+  $response = Invoke-WebRequest -Uri $Url -UseBasicParsing -TimeoutSec 10
+  if ($response.StatusCode -lt 200 -or $response.StatusCode -ge 400) {
+    throw "Unexpected status code $($response.StatusCode) for $Url"
+  }
+
+  $content = [string]$response.Content
+  if ($Kind -eq 'html' -and $content -notmatch '<div id="app"></div>') {
+    throw "HTML shell check failed for $Url"
+  }
+
+  if ($Kind -eq 'asset' -and [string]::IsNullOrWhiteSpace($content)) {
+    throw "Asset response is empty for $Url"
+  }
 }
 
 try {
@@ -78,21 +139,36 @@ sudo rm -f '$remoteArchivePath'
 
   Write-Host "==> Health check $HealthUrl" -ForegroundColor Cyan
   if ($PSCmdlet.ShouldProcess($HealthUrl, "curl health")) {
+    $routesToCheck = @(
+      $HealthUrl,
+      (Resolve-HealthTargetUrl -BaseUrl $HealthUrl -RelativeOrAbsolutePath "/pages/index/index"),
+      (Resolve-HealthTargetUrl -BaseUrl $HealthUrl -RelativeOrAbsolutePath "/pages/login/index")
+    )
+    $assetUrls = Get-IndexAssetUrls -IndexPath $distIndexPath
+
     $ok = $false
+    $lastError = $null
     for ($i = 0; $i -lt 6; $i++) {
       try {
-        $response = Invoke-WebRequest -Uri $HealthUrl -UseBasicParsing -TimeoutSec 10
-        if ($response.StatusCode -ge 200 -and $response.StatusCode -lt 400) {
-          $ok = $true
-          break
+        foreach ($routeUrl in $routesToCheck) {
+          Invoke-HealthProbe -Url $routeUrl -Kind 'html'
         }
+
+        foreach ($assetUrl in $assetUrls) {
+          $resolvedAssetUrl = Resolve-HealthTargetUrl -BaseUrl $HealthUrl -RelativeOrAbsolutePath $assetUrl
+          Invoke-HealthProbe -Url $resolvedAssetUrl -Kind 'asset'
+        }
+
+        $ok = $true
+        break
       } catch {
+        $lastError = $_
         Start-Sleep -Seconds 3
       }
     }
 
     if (-not $ok) {
-      Write-Warning "H5 health check did not return 2xx. Verify nginx config: deploy/nginx-princess-order-h5.conf"
+      Write-Warning "H5 health check failed after probing routes and assets. $lastError"
     } else {
       Write-Host "H5 deploy OK" -ForegroundColor Green
     }

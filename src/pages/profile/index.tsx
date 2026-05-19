@@ -255,9 +255,9 @@ export default function Profile() {
         variant='accent'
       >
         <View className='feature-list-card feature-list-card--sky'>
-          <View className='mb-4 flex items-center'>
+          <View className='profile-avatar-row mb-4'>
             <Button
-              className='mr-4 h-20 w-20 overflow-hidden rounded-full border-0 bg-transparent p-0 after:border-0'
+              className='profile-avatar-trigger'
               openType={isH5 ? undefined : 'chooseAvatar'}
               onChooseAvatar={isH5 ? undefined : handleChooseAvatar}
               onClick={isH5 ? handlePickAvatarH5 : undefined}
@@ -266,9 +266,9 @@ export default function Profile() {
             >
               <MemberAvatar member={avatarMember} size='lg' />
             </Button>
-            <View className='flex-1'>
+            <View className='profile-avatar-content'>
               <Text className='feature-list-card__title'>{profileTitle}</Text>
-              <Text className='mt-1 block text-sm text-slate-500'>
+              <Text className='profile-avatar-hint'>
                 头像会保存到服务器，分组里其他成员也能看到。
               </Text>
             </View>

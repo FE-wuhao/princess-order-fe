@@ -1,0 +1,95 @@
+// Skeleton 骨架屏样式
+// 小程序：opacity pulse 动画（兼容性好）
+// H5：shimmer 扫光效果
+
+/* —— 基础骨架块 —— */
+.skeleton {
+  background: #f0e8ec;
+  border-radius: 8px;
+  animation: skeleton-pulse 1.6s ease-in-out infinite;
+}
+
+.skeleton--text {
+  height: 14px;
+  margin-bottom: 8px;
+  border-radius: 4px;
+}
+
+.skeleton--circle {
+  border-radius: 50%;
+}
+
+.skeleton--rect {
+  border-radius: 12px;
+}
+
+.skeleton--card {
+  border-radius: var(--ui-radius-card, 18px);
+  padding: 20px;
+}
+
+/* —— 卡片骨架 —— */
+.skeleton-card {
+  background: var(--ui-bg-elevated, #ffffff);
+  border-radius: var(--ui-radius-card, 18px);
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: var(--ui-shadow-card, 0 5px 15px rgba(116, 73, 95, 0.08));
+}
+
+.skeleton-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+/* —— Hero 骨架 —— */
+.skeleton-hero {
+  padding: 8px 0 16px;
+}
+
+.skeleton-hero__badge {
+  margin-bottom: 8px;
+}
+
+.skeleton-hero__stats {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+/* —— 脉冲动画（小程序兼容）—— */
+@keyframes skeleton-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+/* —— H5 shimmer 增强 —— */
+/* stylelint-disable-next-line media-feature-name-no-unknown */
+@media (hover: hover) {
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      #f0e8ec 25%,
+      #faf5f7 50%,
+      #f0e8ec 75%
+    );
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.8s ease-in-out infinite;
+  }
+
+  @keyframes skeleton-shimmer {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+}

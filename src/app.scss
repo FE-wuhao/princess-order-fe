@@ -1,5 +1,12 @@
+// ── 全局样式入口 ──
+// 引入设计令牌 + BEM 组件样式 + 动画系统
 @use "./styles/ui-tokens.scss";
 @use "./styles/ui-patterns.scss";
+@use "./styles/animations.scss";
+
+// ═══════════════════════════════════════════
+// 基础重置
+// ═══════════════════════════════════════════
 
 page,
 html,
@@ -20,365 +27,147 @@ body,
   min-height: 100%;
 }
 
-.fixed {
-  position: fixed;
-}
+// ═══════════════════════════════════════════
+// 布局工具类
+// ═══════════════════════════════════════════
 
-.bottom-0 {
-  bottom: 0;
-}
+.fixed { position: fixed; }
+.bottom-0 { bottom: 0; }
+.left-0 { left: 0; }
+.right-0 { right: 0; }
+.block { display: block; }
+.flex { display: flex; }
+.grid { display: grid; }
+.flex-1 { flex: 1; }
+.grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.items-start { align-items: flex-start; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
 
-.left-0 {
-  left: 0;
-}
+.gap-2 { gap: 8px; }
+.gap-3 { gap: 12px; }
 
-.right-0 {
-  right: 0;
-}
-
-.block {
-  display: block;
-}
-
-.flex {
-  display: flex;
-}
-
-.grid {
-  display: grid;
-}
-
-.flex-1 {
-  flex: 1;
-}
-
-.grid-cols-2 {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.items-start {
-  align-items: flex-start;
-}
-
-.items-center {
-  align-items: center;
-}
-
-.justify-between {
-  justify-content: space-between;
-}
-
-.gap-2 {
-  gap: 8px;
-}
-
-.gap-3 {
-  gap: 12px;
-}
-
+// space-y 子元素间距（兼容 Taro 渲染的 taro-view-core 标签）
 .space-y-3 > view + view,
 .space-y-3 > taro-view-core + taro-view-core,
-.space-y-3 > * + * {
-  margin-top: 12px;
-}
+.space-y-3 > * + * { margin-top: 12px; }
 
 .space-y-4 > view + view,
 .space-y-4 > taro-view-core + taro-view-core,
-.space-y-4 > * + * {
-  margin-top: 16px;
-}
+.space-y-4 > * + * { margin-top: 16px; }
 
-.w-full {
-  width: 100%;
-}
+.w-full { width: 100%; }
 
-.m-0 {
-  margin: 0;
-}
+// ═══════════════════════════════════════════
+// 间距工具类 — 基于 4px 网格
+// ═══════════════════════════════════════════
 
-.mb-2 {
-  margin-bottom: 8px;
-}
+.m-0 { margin: 0; }
+.mb-2 { margin-bottom: 8px; }
+.mb-3 { margin-bottom: 12px; }
+.mb-4 { margin-bottom: 16px; }
+.mb-5 { margin-bottom: 20px; }
+.mt-1 { margin-top: 4px; }
+.mt-2 { margin-top: 8px; }
+.mt-3 { margin-top: 12px; }
+.mt-4 { margin-top: 16px; }
+.mt-5 { margin-top: 20px; }
 
-.mb-2-5 {
-  margin-bottom: 10px;
-}
+.p-3 { padding: 12px; }
+.p-4 { padding: 16px; }
+.p-5 { padding: 20px; }
 
-.mb-3 {
-  margin-bottom: 12px;
-}
+.px-2 { padding-left: 8px; padding-right: 8px; }
+.px-3 { padding-left: 12px; padding-right: 12px; }
+.px-4 { padding-left: 16px; padding-right: 16px; }
+.px-5 { padding-left: 20px; padding-right: 20px; }
 
-.mb-4 {
-  margin-bottom: 16px;
-}
+.py-1 { padding-top: 4px; padding-bottom: 4px; }
+.py-2 { padding-top: 8px; padding-bottom: 8px; }
+.py-3 { padding-top: 12px; padding-bottom: 12px; }
+.py-4 { padding-top: 16px; padding-bottom: 16px; }
+.py-5 { padding-top: 20px; padding-bottom: 20px; }
+.py-6 { padding-top: 24px; padding-bottom: 24px; }
+.py-8 { padding-top: 32px; padding-bottom: 32px; }
+.py-10 { padding-top: 40px; padding-bottom: 40px; }
 
-.mb-5 {
-  margin-bottom: 20px;
-}
+.pb-8 { padding-bottom: 32px; }
+.pb-24 { padding-bottom: 96px; }
+.pb-28 { padding-bottom: 112px; }
+.pb-32 { padding-bottom: 128px; }
+.pr-3 { padding-right: 12px; }
 
-.mt-1 {
-  margin-top: 4px;
-}
+// 非标准间距（兼容旧代码，保持可用但标记为 deprecated）
+// @deprecated 请使用标准间距，新代码使用 py-1 (4px) 或 py-2 (8px)
+.py-0-5 { padding-top: 2px; padding-bottom: 2px; }
+.py-2-5 { padding-top: 10px; padding-bottom: 10px; }
+.px-1-5 { padding-left: 6px; padding-right: 6px; }
+.mb-2-5 { margin-bottom: 10px; }
+.ml-2-5 { margin-left: 10px; }
+.mr-2-5 { margin-right: 10px; }
 
-.mt-2 {
-  margin-top: 8px;
-}
+// ═══════════════════════════════════════════
+// 尺寸工具类
+// ═══════════════════════════════════════════
 
-.mt-3 {
-  margin-top: 12px;
-}
+.h-11 { height: 44px; }
+.w-11 { width: 44px; }
+.h-20 { height: 80px; }
+.w-20 { width: 80px; }
+.h-24 { height: 96px; }
+.h-28 { height: 112px; }
+.min-h-screen { min-height: 100vh; }
 
-.mt-4 {
-  margin-top: 16px;
-}
+// ═══════════════════════════════════════════
+// 圆角工具类
+// ═══════════════════════════════════════════
 
-.mt-5 {
-  margin-top: 20px;
-}
+.rounded { border-radius: 4px; }
+.rounded-lg { border-radius: 8px; }
+.rounded-2xl { border-radius: 16px; }
+.rounded-3xl { border-radius: 24px; }
+.rounded-full { border-radius: 9999px; }
 
-.ml-2-5 {
-  margin-left: 10px;
-}
-
-.mr-2-5 {
-  margin-right: 10px;
-}
-
-.p-3 {
-  padding: 12px;
-}
-
-.p-4 {
-  padding: 16px;
-}
-
-.p-5 {
-  padding: 20px;
-}
-
-.px-1-5 {
-  padding-left: 6px;
-  padding-right: 6px;
-}
-
-.px-2 {
-  padding-left: 8px;
-  padding-right: 8px;
-}
-
-.px-3 {
-  padding-left: 12px;
-  padding-right: 12px;
-}
-
-.px-4 {
-  padding-left: 16px;
-  padding-right: 16px;
-}
-
-.px-5 {
-  padding-left: 20px;
-  padding-right: 20px;
-}
-
-.py-0-5 {
-  padding-top: 2px;
-  padding-bottom: 2px;
-}
-
-.py-1 {
-  padding-top: 4px;
-  padding-bottom: 4px;
-}
-
-.py-2,
-.py-2-5 {
-  padding-top: 8px;
-  padding-bottom: 8px;
-}
-
-.py-3 {
-  padding-top: 12px;
-  padding-bottom: 12px;
-}
-
-.py-4 {
-  padding-top: 16px;
-  padding-bottom: 16px;
-}
-
-.py-5 {
-  padding-top: 20px;
-  padding-bottom: 20px;
-}
-
-.py-6 {
-  padding-top: 24px;
-  padding-bottom: 24px;
-}
-
-.py-8 {
-  padding-top: 32px;
-  padding-bottom: 32px;
-}
-
-.py-10 {
-  padding-top: 40px;
-  padding-bottom: 40px;
-}
-
-.pb-8 {
-  padding-bottom: 32px;
-}
-
-.pb-24 {
-  padding-bottom: 96px;
-}
-
-.pb-28 {
-  padding-bottom: 112px;
-}
-
-.pb-32 {
-  padding-bottom: 128px;
-}
-
-.pr-3 {
-  padding-right: 12px;
-}
-
-.h-24 {
-  height: 96px;
-}
-
-.h-28 {
-  height: 112px;
-}
-
-.min-h-screen {
-  min-height: 100vh;
-}
-
-.rounded {
-  border-radius: 4px;
-}
-
-.rounded-lg {
-  border-radius: 8px;
-}
-
-.rounded-2xl {
-  border-radius: 16px;
-}
-
-.rounded-3xl {
-  border-radius: 24px;
-}
-
-.rounded-full {
-  border-radius: 9999px;
-}
+// ═══════════════════════════════════════════
+// 边框工具类 — 颜色统一引用设计令牌
+// ═══════════════════════════════════════════
 
 .border {
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--ui-neutral-soft, #f3eef1);
 }
-
 .border-b {
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--ui-neutral-soft, #f3eef1);
 }
 
-.border-amber-100 {
-  border-color: #fef3c7;
-}
+// ═══════════════════════════════════════════
+// 背景色工具类 — 颜色统一引用设计令牌
+// ═══════════════════════════════════════════
 
-.border-gray-100 {
-  border-color: #f3f4f6;
-}
+.bg-white { background-color: var(--ui-bg-elevated, #ffffff); }
+.bg-primary { background-color: var(--ui-brand-500, #c65a72); }
 
-.border-gray-200 {
-  border-color: #e5e7eb;
-}
+// 灰度背景映射到令牌
+// gray-50/100/200 → neutral-soft (#f3eef1)
+.bg-gray-50  { background-color: var(--ui-bg-muted, #fff2ef); }
+.bg-gray-100 { background-color: var(--ui-neutral-soft, #f3eef1); }
+.bg-gray-200 { background-color: #e5e0e3; }
 
-.border-primary {
-  border-color: #ff6b9d;
-}
+// 暖色背景映射 — 保持语义但引用令牌相近色
+.bg-rose-50    { background-color: var(--ui-brand-soft, #fde8ec); }
+.bg-rose-100   { background-color: #fdd4dc; }
+.bg-amber-50   { background-color: var(--ui-warning-soft, #fff3d8); }
+.bg-amber-100  { background-color: #fde8b8; }
+.bg-orange-50  { background-color: #fff7ed; }
+.bg-orange-100 { background-color: #ffedd5; }
+.bg-pink-50    { background-color: var(--ui-brand-soft, #fde8ec); }
+.bg-green-100  { background-color: var(--ui-success-soft, #e4f7ed); }
+.bg-emerald-100 { background-color: #d1fae5; }
+.bg-blue-100   { background-color: var(--ui-accent-soft, #ecf0ff); }
+.bg-sky-50     { background-color: var(--ui-accent-soft, #ecf0ff); }
+.bg-sky-100    { background-color: #dce4ff; }
+.bg-cyan-50    { background-color: #ecfeff; }
 
-.border-rose-100 {
-  border-color: #ffe4e6;
-}
-
-.bg-white {
-  background-color: #ffffff;
-}
-
-.bg-gray-50 {
-  background-color: #f9fafb;
-}
-
-.bg-gray-100 {
-  background-color: #f3f4f6;
-}
-
-.bg-gray-200 {
-  background-color: #e5e7eb;
-}
-
-.bg-amber-50 {
-  background-color: #fffbeb;
-}
-
-.bg-amber-100 {
-  background-color: #fef3c7;
-}
-
-.bg-rose-50 {
-  background-color: #fff1f2;
-}
-
-.bg-rose-100 {
-  background-color: #ffe4e6;
-}
-
-.bg-orange-50 {
-  background-color: #fff7ed;
-}
-
-.bg-orange-100 {
-  background-color: #ffedd5;
-}
-
-.bg-pink-50 {
-  background-color: #fdf2f8;
-}
-
-.bg-green-100 {
-  background-color: #dcfce7;
-}
-
-.bg-emerald-100 {
-  background-color: #d1fae5;
-}
-
-.bg-blue-100 {
-  background-color: #dbeafe;
-}
-
-.bg-sky-50 {
-  background-color: #f0f9ff;
-}
-
-.bg-sky-100 {
-  background-color: #e0f2fe;
-}
-
-.bg-cyan-50 {
-  background-color: #ecfeff;
-}
-
-.bg-primary {
-  background-color: #ff6b9d;
-}
-
+// 渐变色背景
 .bg-gradient-to-br {
   background-image: linear-gradient(
     135deg,
@@ -388,189 +177,77 @@ body,
   );
 }
 
-.from-amber-100,
-.from-cyan-200,
-.from-rose-200,
-.from-slate-200,
-.via-pink-100,
-.via-rose-100,
-.via-sky-100,
-.via-white,
-.to-amber-100,
-.to-cyan-100,
-.to-white {
-  /* 这些类保留为兼容旧 className，渐变由 bg-gradient-to-br 统一承接。 */
-}
+// ═══════════════════════════════════════════
+// 文本工具类
+// ═══════════════════════════════════════════
 
-.text-center {
-  text-align: center;
-}
+.text-center { text-align: center; }
+.text-right { text-align: right; }
 
-.text-right {
-  text-align: right;
-}
+// 字号
+.text-xs  { font-size: 12px; line-height: 16px; }
+.text-sm  { font-size: 14px; line-height: 20px; }
+.text-base { font-size: 16px; line-height: 24px; }
+.text-lg  { font-size: 18px; line-height: 28px; }
+.text-xl  { font-size: 20px; line-height: 28px; }
+.text-2xl { font-size: 24px; line-height: 32px; }
 
-.text-xs {
-  font-size: 12px;
-  line-height: 16px;
-}
+// 字重
+.font-medium { font-weight: 500; }
+.font-semibold { font-weight: 600; }
+.font-bold { font-weight: 700; }
 
-.text-sm {
-  font-size: 14px;
-  line-height: 20px;
-}
+// 大小写 & 行高 & 字距
+.uppercase { text-transform: uppercase; }
+.leading-6 { line-height: 24px; }
+.leading-relaxed { line-height: 1.625; }
+.tracking-wider { letter-spacing: 1px; }
+.tracking-widest { letter-spacing: 3px; }
 
-.text-base {
-  font-size: 16px;
-  line-height: 24px;
-}
+// ═══════════════════════════════════════════
+// 文本颜色工具类 — 统一引用设计令牌
+// ═══════════════════════════════════════════
 
-.text-lg {
-  font-size: 18px;
-  line-height: 28px;
-}
+.text-white { color: #ffffff; }
 
-.text-xl {
-  font-size: 20px;
-  line-height: 28px;
-}
+// 灰色阶映射到设计令牌
+.text-gray-400 { color: var(--ui-text-tertiary, #a18c98); }
+.text-gray-500 { color: var(--ui-text-tertiary, #a18c98); }
+.text-gray-600 { color: var(--ui-text-secondary, #6f5a67); }
+.text-gray-700 { color: var(--ui-text-secondary, #6f5a67); }
+.text-gray-900 { color: var(--ui-text-primary, #2f1f28); }
+.text-slate-500 { color: var(--ui-text-tertiary, #a18c98); }
 
-.text-2xl {
-  font-size: 24px;
-  line-height: 32px;
-}
+// 语义色 — 引用设计令牌
+.text-rose-500   { color: var(--ui-danger-text, #c2415d); }
+.text-rose-700   { color: var(--ui-danger-text, #c2415d); }
+.text-amber-700  { color: var(--ui-warning-text, #b7791f); }
+.text-orange-500 { color: #f97316; }
+.text-orange-700 { color: var(--ui-warning-text, #b7791f); }
+.text-green-700  { color: var(--ui-success-text, #1f8a5b); }
+.text-emerald-700 { color: var(--ui-success-text, #1f8a5b); }
+.text-blue-700   { color: var(--ui-accent-500, #7c8fd8); }
+.text-sky-600    { color: var(--ui-accent-500, #7c8fd8); }
+.text-sky-700    { color: var(--ui-accent-500, #7c8fd8); }
+.text-cyan-700   { color: #0e7490; }
 
-.font-medium {
-  font-weight: 500;
-}
-
-.font-semibold {
-  font-weight: 600;
-}
-
-.font-bold {
-  font-weight: 700;
-}
-
-.uppercase {
-  text-transform: uppercase;
-}
-
-.leading-6 {
-  line-height: 24px;
-}
-
-.leading-relaxed {
-  line-height: 1.625;
-}
-
-.tracking-wider {
-  letter-spacing: 1px;
-}
-
-.tracking-widest {
-  letter-spacing: 3px;
-}
-
-.text-white {
-  color: #ffffff;
-}
-
-.text-gray-400 {
-  color: #9ca3af;
-}
-
-.text-gray-500 {
-  color: #6b7280;
-}
-
-.text-gray-600 {
-  color: #4b5563;
-}
-
-.text-gray-700 {
-  color: #374151;
-}
-
-.text-gray-900 {
-  color: #111827;
-}
-
-.text-amber-700 {
-  color: #b45309;
-}
-
-.text-rose-500 {
-  color: #f43f5e;
-}
-
-.text-rose-700 {
-  color: #be123c;
-}
-
-.text-orange-500 {
-  color: #f97316;
-}
-
-.text-orange-700 {
-  color: #c2410c;
-}
-
-.text-green-700 {
-  color: #15803d;
-}
-
-.text-emerald-700 {
-  color: #047857;
-}
-
-.text-blue-700 {
-  color: #1d4ed8;
-}
-
-.text-sky-600 {
-  color: #0284c7;
-}
-
-.text-sky-700 {
-  color: #0369a1;
-}
-
-.text-cyan-700 {
-  color: #0e7490;
-}
+// ═══════════════════════════════════════════
+// 阴影工具类
+// ═══════════════════════════════════════════
 
 .shadow-sm {
-  box-shadow: 0 1px 5px rgba(15, 23, 42, 0.06);
+  box-shadow: var(--ui-shadow-card, 0 5px 15px rgba(116, 73, 95, 0.08));
 }
-
 .shadow-lg {
-  box-shadow: 0 8px 16px rgba(15, 23, 42, 0.12);
+  box-shadow: var(--ui-shadow-floating, 0 10px 24px rgba(116, 73, 95, 0.14));
 }
-
 .shadow-top {
   box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.text-slate-500 {
-  color: #64748b;
-}
-
-.h-11 {
-  height: 44px;
-}
-
-.w-11 {
-  width: 44px;
-}
-
-.h-20 {
-  height: 80px;
-}
-
-.w-20 {
-  width: 80px;
-}
+// ═══════════════════════════════════════════
+// 头像行（profile-edit 页专用）
+// ═══════════════════════════════════════════
 
 .profile-avatar-row {
   display: flex;
@@ -612,12 +289,16 @@ taro-button-core.profile-avatar-trigger::after {
 .profile-avatar-hint {
   display: block;
   margin-top: 4px;
-  color: #64748b;
+  color: var(--ui-text-tertiary, #a18c98);
   font-size: 14px;
   line-height: 20px;
 }
 
-/* H5：覆盖 Taro 默认按钮，保证 app-button 系列样式生效 */
+// ═══════════════════════════════════════════
+// 平台兼容覆盖
+// ═══════════════════════════════════════════
+
+/* H5：覆盖 Taro 默认按钮样式 */
 taro-button-core.app-button,
 .app-button {
   width: 100%;
@@ -627,4 +308,41 @@ taro-button-core.app-button,
 taro-button-core.app-button::after,
 .app-button::after {
   border: 0;
+}
+
+/* 登录页面：禁止滚动 */
+.taro_page .page-shell.page-shell--login {
+  height: 100vh;
+  overflow: hidden;
+}
+
+.taro_page.page-shell--login {
+  height: 100vh;
+  overflow: hidden !important;
+  overscroll-behavior: none;
+}
+
+.taro_page.page-shell--login,
+.taro_page.page-shell--login > * {
+  touch-action: pan-y pinch-zoom;
+}
+
+.h5-body {
+  overflow: hidden;
+}
+
+.login-page__version {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 20vh;
+  z-index: 2;
+  padding-top: 8px;
+  padding-bottom: calc(env(safe-area-inset-bottom) + 8px);
+  color: var(--ui-text-tertiary);
+  font-size: 11px;
+  line-height: 16px;
+  text-align: center;
+  letter-spacing: 0.5px;
+  pointer-events: none;
 }

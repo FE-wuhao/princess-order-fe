@@ -1,0 +1,26 @@
+// Pressable 样式
+// H5 端使用 :active 伪类增强反馈
+// 小程序端由 JS Touch 事件处理
+
+.pressable {
+  display: inline-block;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+/* H5 :active 增强 — transform 由 JS 控制，这里补充透明度 */
+/* stylelint-disable-next-line media-feature-name-no-unknown */
+@media (hover: hover) {
+  .pressable:hover {
+    opacity: 0.92;
+  }
+
+  .pressable:active {
+    opacity: 0.85;
+  }
+}
+
+.pressable--pressed {
+  opacity: 0.85;
+}

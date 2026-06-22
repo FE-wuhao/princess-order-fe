@@ -1,0 +1,26 @@
+// ConfirmDialog 样式
+// 复用全局 dialog-mask 和 dialog-card 的 BEM 基础样式
+// 仅补充 confirm 特有布局
+
+.dialog-card--confirm {
+  max-width: 320px;
+}
+
+.dialog-card__body {
+  padding: 24px 20px 16px;
+  text-align: center;
+}
+
+.dialog-card__description {
+  display: block;
+  margin-top: 8px;
+  font-size: 14px;
+  color: var(--ui-text-secondary, #6f5a67);
+  line-height: 1.6;
+}
+
+.dialog-card__actions--split {
+  display: flex;
+  gap: 0;
+  border-top: 1px solid rgba(198, 90, 114, 0.1);
+}

@@ -3,6 +3,7 @@ import { authApi } from '@/services/api'
 import { isH5 } from '@/utils/platform'
 
 const LOGIN_PAGE = '/pages/login/index'
+const WORKSPACE_ENTRY_PAGE = '/pages/workspace-entry/index'
 
 export const wxLogin = async () => {
   const loginRes = await Taro.login()
@@ -52,6 +53,10 @@ export const redirectToLogin = () => {
   Taro.redirectTo({ url: LOGIN_PAGE })
 }
 
+export const redirectToWorkspaceEntry = () => {
+  Taro.reLaunch({ url: WORKSPACE_ENTRY_PAGE })
+}
+
 export const ensureAuth = async (): Promise<boolean> => {
   if (checkAuth()) {
     return true
@@ -68,9 +73,10 @@ export const ensureAuth = async (): Promise<boolean> => {
 
 export const logout = () => {
   Taro.removeStorageSync('token')
+  Taro.removeStorageSync('preferredWorkspaceId')
   if (isH5) {
     Taro.reLaunch({ url: LOGIN_PAGE })
     return
   }
-  Taro.reLaunch({ url: '/pages/index/index' })
+  Taro.reLaunch({ url: LOGIN_PAGE })
 }

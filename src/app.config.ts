@@ -6,6 +6,9 @@ const tabPages = [
 ]
 
 const sharedPages = [
+  'pages/workspace-entry/index',
+  'pages/notifications/index',
+  'pages/profile-edit/index',
   'pages/group/index',
   'pages/member-form/index',
   'pages/recipe/index',

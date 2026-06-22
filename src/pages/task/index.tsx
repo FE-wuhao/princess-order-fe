@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Button, Text, View } from '@tarojs/components'
-import Taro from '@tarojs/taro'
+import Taro, { useRouter } from '@tarojs/taro'
 import BottomActionBar from '@/components/bottom-action-bar'
 import EmptyState from '@/components/empty-state'
 import SectionCard from '@/components/section-card'
+import { SkeletonCard } from '@/components/skeleton'
 import StatusChip from '@/components/status-chip'
+import SubPageHeader from '@/components/sub-page-header'
 import {
   NotificationStatus,
   notificationStatusMetaMap,
@@ -13,64 +15,42 @@ import {
 } from '@/constants/ui'
 import { messageApi, taskApi, userApi } from '@/services/api'
 import { showErrorToast } from '@/utils/error'
+import { getRouteNumberParam } from '@/utils/router'
+import type { User } from '@shared/types'
 
-interface UserSummary {
-  id: number
-  nickname?: string
-}
+type TaskStatus =
+  | 'created'
+  | 'accepted'
+  | 'rejected'
+  | 'cooking'
+  | 'completed'
+  | 'confirmed'
+  | 'cancelled'
+  | 'expired'
 
 interface TaskDetail {
   id: number
-  status:
-    | 'created'
-    | 'accepted'
-    | 'rejected'
-    | 'cooking'
-    | 'completed'
-    | 'confirmed'
-    | 'cancelled'
-    | 'expired'
+  status: TaskStatus
   remark?: string | null
   rejectReason?: string | null
   cancelReason?: string | null
-  recipe?: {
-    id: number
-    name: string
-  }
-  recipeSnapshot?: {
-    recipeName?: string
-  } | null
-  workspace?: {
-    id: number
-    name: string
-  } | null
-  creator?: UserSummary
-  assignee?: UserSummary
+  recipe?: { id: number; name: string }
+  recipeSnapshot?: { recipeName?: string } | null
+  workspace?: { id: number; name: string } | null
+  creator?: Pick<User, 'id' | 'nickname'>
+  assignee?: Pick<User, 'id' | 'nickname'>
   events?: Array<{
     id: number
-    eventType:
-      | 'created'
-      | 'accepted'
-      | 'rejected'
-      | 'started'
-      | 'completed'
-      | 'confirmed'
-      | 'cancelled'
-      | 'expired'
+    eventType: string
     fromStatus?: string | null
     toStatus?: string | null
-    payload?: Record<string, any> | null
+    payload?: Record<string, unknown> | null
     createdAt?: string
-    operator?: UserSummary
+    operator?: Pick<User, 'id' | 'nickname'>
   }>
   notificationLogs?: Array<{
     id: number
-    bizType:
-      | 'order_created'
-      | 'order_accepted'
-      | 'order_rejected'
-      | 'order_completed'
-      | 'order_expired'
+    bizType: string
     status: 'pending' | 'success' | 'failed'
     templateCode: string
     createdAt?: string
@@ -79,7 +59,7 @@ interface TaskDetail {
   }>
 }
 
-const eventLabelMap: Record<NonNullable<TaskDetail['events']>[number]['eventType'], string> = {
+const eventLabelMap: Record<string, string> = {
   created: '创建任务',
   accepted: '接受任务',
   rejected: '拒绝任务',
@@ -90,19 +70,29 @@ const eventLabelMap: Record<NonNullable<TaskDetail['events']>[number]['eventType
   expired: '任务超时',
 }
 
+/** 状态流转映射：操作 → 预期的新状态（用于乐观更新） */
+const optimisticStatusMap: Record<string, TaskStatus> = {
+  accept: 'accepted',
+  reject: 'rejected',
+  start: 'cooking',
+  complete: 'completed',
+  confirm: 'confirmed',
+  cancel: 'cancelled',
+}
+
 export default function Task() {
   const [task, setTask] = useState<TaskDetail | null>(null)
-  const [currentUser, setCurrentUser] = useState<UserSummary | null>(null)
+  const [currentUser, setCurrentUser] = useState<Pick<User, 'id' | 'nickname'> | null>(null)
   const [loading, setLoading] = useState(false)
   const [acting, setActing] = useState(false)
   const [retryingLogId, setRetryingLogId] = useState<number | null>(null)
 
-  const taskId = useMemo(() => {
-    const params = Taro.getCurrentInstance().router?.params
-    return parseInt(params?.id || '0')
-  }, [])
+  const router = useRouter()
+  const taskId = getRouteNumberParam(router.params, 'id')
 
   const loadTask = useCallback(async () => {
+    if (!taskId) return
+
     setLoading(true)
     try {
       const [taskData, profile] = await Promise.all([
@@ -132,27 +122,40 @@ export default function Task() {
       placeholderText,
       confirmText: '确认',
     })
-
-    if (!result.confirm) {
-      return null
-    }
-
+    if (!result.confirm) return null
     return result.content?.trim() || ''
   }
 
-  const runAction = async (action: () => Promise<any>, successTitle: string) => {
+  /**
+   * 执行任务操作，支持乐观更新
+   * @param actionKey - 操作标识（用于乐观状态映射）
+   * @param action - 异步 API 调用
+   * @param successTitle - 成功提示
+   */
+  const runAction = async (
+    actionKey: string,
+    action: () => Promise<unknown>,
+    successTitle: string,
+  ) => {
     try {
       setActing(true)
+
+      // ── 乐观更新：立即更新本地状态 ──
+      const newStatus = optimisticStatusMap[actionKey]
+      if (newStatus) {
+        setTask((prev) => (prev ? { ...prev, status: newStatus } : prev))
+      }
+
       Taro.showLoading({ title: '处理中...' })
       await action()
       Taro.hideLoading()
-      Taro.showToast({
-        title: successTitle,
-        icon: 'success',
-      })
+      Taro.showToast({ title: successTitle, icon: 'success' })
+      // 操作成功后重新获取最新数据
       loadTask()
     } catch (error) {
       Taro.hideLoading()
+      // ── 乐观更新回滚：重新加载真实数据 ──
+      loadTask()
       showErrorToast(error, '操作失败')
     } finally {
       setActing(false)
@@ -160,47 +163,49 @@ export default function Task() {
   }
 
   const handleAccept = () => {
-    runAction(() => taskApi.accept(taskId), '已接任务')
+    runAction('accept', () => taskApi.accept(taskId), '已接任务')
   }
 
   const handleReject = async () => {
     const reason = await promptText('拒绝任务', '告诉对方这次为什么不能接')
-    if (reason === null || !reason) {
-      return
-    }
-    runAction(() => taskApi.reject(taskId, reason), '已拒绝')
+    if (reason === null || !reason) return
+    runAction('reject', () => taskApi.reject(taskId, reason), '已拒绝')
   }
 
   const handleStart = async () => {
     const remark = await promptText('开始制作', '可选填写一句备注')
-    if (remark === null) {
-      return
-    }
-    runAction(() => taskApi.start(taskId, remark || undefined), '已开始')
+    if (remark === null) return
+    runAction('start', () => taskApi.start(taskId, remark || undefined), '已开始')
   }
 
   const handleComplete = async () => {
     const remark = await promptText('完成任务', '例如：已经做好啦')
-    if (remark === null) {
-      return
-    }
-    runAction(() => taskApi.complete(taskId, remark || undefined), '已完成')
+    if (remark === null) return
+    runAction(
+      'complete',
+      () => taskApi.complete(taskId, remark || undefined),
+      '已完成',
+    )
   }
 
   const handleConfirm = async () => {
     const remark = await promptText('确认完成', '可选留一句反馈')
-    if (remark === null) {
-      return
-    }
-    runAction(() => taskApi.confirm(taskId, remark || undefined), '已确认')
+    if (remark === null) return
+    runAction(
+      'confirm',
+      () => taskApi.confirm(taskId, remark || undefined),
+      '已确认',
+    )
   }
 
   const handleCancel = async () => {
     const reason = await promptText('取消任务', '可选说明取消原因')
-    if (reason === null) {
-      return
-    }
-    runAction(() => taskApi.cancel(taskId, reason || undefined), '已取消')
+    if (reason === null) return
+    runAction(
+      'cancel',
+      () => taskApi.cancel(taskId, reason || undefined),
+      '已取消',
+    )
   }
 
   const handleRetryNotification = async (logId: number) => {
@@ -209,10 +214,7 @@ export default function Task() {
       Taro.showLoading({ title: '重试中...' })
       await messageApi.retryNotification(logId)
       Taro.hideLoading()
-      Taro.showToast({
-        title: '已重试',
-        icon: 'success',
-      })
+      Taro.showToast({ title: '已重试', icon: 'success' })
       loadTask()
     } catch (error) {
       Taro.hideLoading()
@@ -223,9 +225,7 @@ export default function Task() {
   }
 
   const actionButtons = useMemo(() => {
-    if (!task) {
-      return []
-    }
+    if (!task) return []
 
     const actions: Array<{
       key: string
@@ -238,19 +238,15 @@ export default function Task() {
       actions.push({ key: 'accept', text: '接受', onClick: handleAccept, type: 'primary' })
       actions.push({ key: 'reject', text: '拒绝', onClick: handleReject, type: 'warn' })
     }
-
     if (isAssignee && task.status === 'accepted') {
       actions.push({ key: 'start', text: '开始制作', onClick: handleStart, type: 'primary' })
     }
-
     if (isAssignee && ['accepted', 'cooking'].includes(task.status)) {
       actions.push({ key: 'complete', text: '提交完成', onClick: handleComplete, type: 'primary' })
     }
-
     if (isCreator && task.status === 'completed') {
       actions.push({ key: 'confirm', text: '确认完成', onClick: handleConfirm, type: 'primary' })
     }
-
     if (isCreator && ['created', 'accepted', 'cooking'].includes(task.status)) {
       actions.push({ key: 'cancel', text: '取消任务', onClick: handleCancel, type: 'warn' })
     }
@@ -259,11 +255,21 @@ export default function Task() {
   }, [task, isAssignee, isCreator])
 
   if (loading) {
-    return <View className='p-5'>加载中...</View>
+    return (
+      <View className='page-shell page-shell--sky px-4 py-5'>
+        <SkeletonCard />
+        <SkeletonCard />
+        <SkeletonCard />
+      </View>
+    )
   }
 
   if (!task) {
-    return <View className='p-5'>任务不存在</View>
+    return (
+      <View className='page-shell page-shell--sky px-4 py-5'>
+        <EmptyState tone='gray' title='任务不存在' description='该任务可能已被删除。' />
+      </View>
+    )
   }
 
   const orderStatusMeta = orderStatusMetaMap[task.status]
@@ -272,6 +278,7 @@ export default function Task() {
 
   return (
     <View className='page-shell page-shell--sky px-4 py-5 pb-32'>
+      <SubPageHeader title='任务详情' description='任务状态、时间线和通知记录都在这里。' />
       <View className='section-card section-card--accent'>
         <View className='mb-3 flex items-center justify-between'>
           <Text className='text-xl font-bold text-gray-900'>{taskTitle}</Text>
@@ -312,7 +319,7 @@ export default function Task() {
               <View key={event.id} className='feature-list-card feature-list-card--sky'>
                 <View className='flex items-center justify-between'>
                   <Text className='text-sm font-medium text-gray-900'>
-                    {eventLabelMap[event.eventType]}
+                    {eventLabelMap[event.eventType] || event.eventType}
                   </Text>
                   <Text className='text-xs text-gray-500'>{event.createdAt || '暂无'}</Text>
                 </View>
@@ -326,12 +333,12 @@ export default function Task() {
                 ) : null}
                 {event.payload?.remark ? (
                   <Text className='mt-2 block text-sm text-gray-700'>
-                    备注：{event.payload.remark}
+                    备注：{String(event.payload.remark)}
                   </Text>
                 ) : null}
                 {event.payload?.reason ? (
                   <Text className='mt-2 block text-sm text-gray-700'>
-                    原因：{event.payload.reason}
+                    原因：{String(event.payload.reason)}
                   </Text>
                 ) : null}
               </View>

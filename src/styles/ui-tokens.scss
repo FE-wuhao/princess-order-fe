@@ -1,18 +1,36 @@
-/* 尺寸按 375 设计稿标注写 px，由 Taro postcss 在小程序转 rpx、H5 转 rem */
+/* ═══════════════════════════════════════════
+   设计令牌 (Design Tokens)
+   尺寸按 375 设计稿标注写 px，由 Taro postcss 在小程序转 rpx、H5 转 rem
+
+   颜色体系说明：
+   - brand (品牌色): 暖粉色 #c65a72 — 主色调
+   - accent (强调色): 蓝紫色 #7c8fd8 — 辅助强调
+   - 语义色: warning(黄) / danger(红) / success(绿) / neutral(灰)
+   ═══════════════════════════════════════════ */
+
 :root,
 page {
+  // ── 背景 ──
   --ui-bg-page: #fff8f7;
   --ui-bg-elevated: #ffffff;
   --ui-bg-muted: #fff2ef;
   --ui-bg-soft: #fffaf2;
+
+  // ── 文本 ──
   --ui-text-primary: #2f1f28;
   --ui-text-secondary: #6f5a67;
   --ui-text-tertiary: #a18c98;
+
+  // ── 品牌色（暖粉）──
   --ui-brand-500: #c65a72;
   --ui-brand-600: #af4660;
   --ui-brand-soft: #fde8ec;
+
+  // ── 强调色（蓝紫）──
   --ui-accent-500: #7c8fd8;
   --ui-accent-soft: #ecf0ff;
+
+  // ── 语义色 ──
   --ui-warning-soft: #fff3d8;
   --ui-warning-text: #b7791f;
   --ui-danger-soft: #ffe1e6;
@@ -21,8 +39,25 @@ page {
   --ui-success-text: #1f8a5b;
   --ui-neutral-soft: #f3eef1;
   --ui-neutral-text: #7a6874;
+
+  // ── 阴影 ──
   --ui-shadow-card: 0 5px 15px rgba(116, 73, 95, 0.08);
   --ui-shadow-floating: 0 10px 24px rgba(116, 73, 95, 0.14);
+
+  // ── 圆角 ──
   --ui-radius-card: 18px;
   --ui-radius-pill: 9999px;
+
+  // ── 间距（4px 网格体系）──
+  --ui-space-1: 4px;
+  --ui-space-2: 8px;
+  --ui-space-3: 12px;
+  --ui-space-4: 16px;
+  --ui-space-5: 20px;
+  --ui-space-6: 24px;
+  --ui-space-8: 32px;
+  --ui-space-10: 40px;
+  --ui-space-24: 96px;
+  --ui-space-28: 112px;
+  --ui-space-32: 128px;
 }

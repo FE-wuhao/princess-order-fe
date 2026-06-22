@@ -7,7 +7,7 @@ interface SectionCardProps {
   meta?: string
   actions?: ReactNode
   children: ReactNode
-  variant?: 'default' | 'accent' | 'soft'
+  variant?: 'default' | 'accent' | 'soft' | 'warning' | 'info' | 'success' | 'neutral'
 }
 
 export default function SectionCard({

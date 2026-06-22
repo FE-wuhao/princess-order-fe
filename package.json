@@ -8,15 +8,16 @@
     "typescript": true
   },
   "scripts": {
-    "build:weapp": "taro build --type weapp",
-    "build:swan": "taro build --type swan",
-    "build:alipay": "taro build --type alipay",
-    "build:tt": "taro build --type tt",
-    "build:h5": "taro build --type h5",
-    "build:rn": "taro build --type rn",
-    "build:qq": "taro build --type qq",
-    "build:jd": "taro build --type jd",
-    "build:quickapp": "taro build --type quickapp",
+    "build:weapp": "node ./scripts/generate-app-version.js && taro build --type weapp",
+    "build:swan": "node ./scripts/generate-app-version.js && taro build --type swan",
+    "build:alipay": "node ./scripts/generate-app-version.js && taro build --type alipay",
+    "build:tt": "node ./scripts/generate-app-version.js && taro build --type tt",
+    "prebuild:h5": "node ./scripts/ensure-h5-output.js",
+    "build:h5": "node ./scripts/generate-app-version.js && taro build --type h5 && node ./scripts/postbuild-h5.js",
+    "build:rn": "node ./scripts/generate-app-version.js && taro build --type rn",
+    "build:qq": "node ./scripts/generate-app-version.js && taro build --type qq",
+    "build:jd": "node ./scripts/generate-app-version.js && taro build --type jd",
+    "build:quickapp": "node ./scripts/generate-app-version.js && taro build --type quickapp",
     "dev:weapp": "npm run build:weapp -- --watch",
     "dev:swan": "npm run build:swan -- --watch",
     "dev:alipay": "npm run build:alipay -- --watch",
@@ -43,7 +44,8 @@
     "@tarojs/taro": "^4.1.9",
     "@tarojs/taro-h5": "4.1.9",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "zustand": "^5.0.14"
   },
   "devDependencies": {
     "@babel/core": "^7.8.0",

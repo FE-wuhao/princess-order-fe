@@ -1,103 +1,102 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 import { Button, Text, View } from '@tarojs/components'
-import Taro from '@tarojs/taro'
+import Taro, { useDidShow, useRouter } from '@tarojs/taro'
+import AsyncContainer from '@/components/async-container'
 import BottomActionBar from '@/components/bottom-action-bar'
 import EmptyState from '@/components/empty-state'
 import MemberAvatar from '@/components/member-avatar'
 import PageHero from '@/components/page-hero'
+import Pressable from '@/components/pressable'
 import SectionCard from '@/components/section-card'
-import { recipeApi, taskApi, workspaceApi } from '@/services/api'
+import { SkeletonCard } from '@/components/skeleton'
+import SubPageHeader from '@/components/sub-page-header'
+import { useMemberStore } from '@/stores/useMemberStore'
+import { useRecipeStore } from '@/stores/useRecipeStore'
+import { useTaskStore } from '@/stores/useTaskStore'
+import { useWorkspaceStore } from '@/stores/useWorkspaceStore'
+import { taskApi } from '@/services/api'
+import type { WorkspaceMemberView } from '@/services/workspace.api'
+import type { Recipe } from '@shared/types'
 import { showErrorToast } from '@/utils/error'
-import { getMemberDisplayName, getMemberSubtitle } from '@/utils/member'
+import { getMemberDisplayName } from '@/utils/member'
+import { getRouteNumberParam, reLaunchToWorkspaceEntry } from '@/utils/router'
+
+const getAssigneeSubtitle = (member: WorkspaceMemberView) => {
+  const nickname = member?.user?.nickname?.trim()
+  const remark = member?.remark?.trim()
+  const tagName = member?.tag?.name?.trim()
+  if (remark && nickname && remark !== nickname) return `昵称：${nickname}`
+  if (tagName && tagName !== remark && tagName !== nickname) return `称谓模板：${tagName}`
+  return ''
+}
 
 export default function Order() {
-  const [recipes, setRecipes] = useState<any[]>([])
-  const [members, setMembers] = useState<any[]>([])
-  const [selectedRecipeId, setSelectedRecipeId] = useState<number | null>(null)
-  const [selectedAssigneeId, setSelectedAssigneeId] = useState<number | null>(null)
-  const [loading, setLoading] = useState(false)
+  const router = useRouter()
+  const workspaceId = getRouteNumberParam(router.params, 'workspaceId')
 
-  const workspaceId = useMemo(() => {
-    const params = Taro.getCurrentInstance().router?.params
-    return parseInt(params?.workspaceId || '0')
-  }, [])
+  // 使用独立 Store 获取数据
+  const recipes = useRecipeStore((s) => s.recipes)
+  const recipesLoading = useRecipeStore((s) => s.recipesMeta.loading)
+  const refreshRecipes = useRecipeStore((s) => s.refreshRecipes)
+  const members = useMemberStore((s) => s.members)
+  const membersLoading = useMemberStore((s) => s.membersMeta.loading)
+  const refreshMembers = useMemberStore((s) => s.refreshMembers)
+  const loadWorkspaces = useWorkspaceStore((s) => s.loadWorkspaces)
+
+  // 本地选择状态
+  const [selectedRecipeId, setSelectedRecipeId] = Taro.useState<number | null>(null)
+  const [selectedAssigneeId, setSelectedAssigneeId] = Taro.useState<number | null>(null)
+  const [submitting, setSubmitting] = Taro.useState(false)
 
   const loadData = useCallback(async () => {
-    setLoading(true)
+    if (!workspaceId) {
+      reLaunchToWorkspaceEntry()
+      return
+    }
     try {
-      const [workspace, recipesData] = await Promise.all([
-        workspaceApi.getDetail(workspaceId),
-        recipeApi.getList(workspaceId),
-      ])
-      setRecipes(recipesData)
-      setMembers(workspace.members || [])
+      await loadWorkspaces()
+      await Promise.all([refreshRecipes(true), refreshMembers(true)])
     } catch (error) {
       showErrorToast(error, '加载失败')
-    } finally {
-      setLoading(false)
     }
-  }, [workspaceId])
+  }, [workspaceId, loadWorkspaces, refreshRecipes, refreshMembers])
 
   useEffect(() => {
     loadData()
   }, [loadData])
 
+  useDidShow(() => {
+    refreshRecipes()
+    refreshMembers()
+  })
+
   const handleSubmit = async () => {
-    if (!selectedRecipeId) {
-      Taro.showToast({
-        title: '请选择菜谱',
-        icon: 'none',
-      })
-      return
-    }
-
-    if (!selectedAssigneeId) {
-      Taro.showToast({
-        title: '请选择执行人',
-        icon: 'none',
-      })
-      return
-    }
-
+    if (!selectedRecipeId) { Taro.showToast({ title: '请选择菜谱', icon: 'none' }); return }
+    if (!selectedAssigneeId) { Taro.showToast({ title: '请选择执行人', icon: 'none' }); return }
+    setSubmitting(true)
     try {
       Taro.showLoading({ title: '提交中...' })
       const task = await taskApi.create(workspaceId, selectedRecipeId, selectedAssigneeId)
       Taro.hideLoading()
-      Taro.showToast({
-        title: '任务已创建',
-        icon: 'success',
-      })
+      Taro.showToast({ title: '任务已创建', icon: 'success' })
       setTimeout(() => {
-        if (task?.id) {
-          Taro.redirectTo({
-            url: `/pages/task/index?id=${task.id}`,
-          })
-          return
-        }
-
+        if (task?.id) { Taro.redirectTo({ url: `/pages/task/index?id=${task.id}` }); return }
         Taro.navigateBack()
       }, 800)
     } catch (error) {
       Taro.hideLoading()
       showErrorToast(error, '创建失败')
+    } finally {
+      setSubmitting(false)
     }
   }
 
-  const assignees = useMemo(
-    () => members.filter((member) => member.canAcceptTask),
-    [members],
-  )
-
-  if (loading) {
-    return (
-      <View className='page-shell page-shell--sunset px-4 py-5'>
-        <Text className='block text-center text-gray-500'>加载中...</Text>
-      </View>
-    )
-  }
+  const assignees = useMemo(() => members.filter((m) => m.canAcceptTask), [members])
+  const loading = recipesLoading || membersLoading
 
   return (
     <View className='page-shell page-shell--sunset px-4 py-5 pb-32'>
+      <SubPageHeader title='发起任务' description='先选菜谱，再指定执行人。' />
       <PageHero
         badge='Task Studio'
         title='发起点餐任务'
@@ -125,32 +124,27 @@ export default function Order() {
         meta={`${recipes.length} 个可用`}
         variant='accent'
       >
-        {recipes.length > 0 ? (
-          <View>
-            {recipes.map((recipe) => (
-              <View
-                key={recipe.id}
-                className={
-                  selectedRecipeId === recipe.id
-                    ? 'feature-list-card feature-list-card--amber'
-                    : 'feature-list-card'
-                }
-                onClick={() => setSelectedRecipeId(recipe.id)}
-              >
-                <Text className='feature-list-card__title'>{recipe.name}</Text>
-                <Text className='feature-list-card__meta'>
-                  {selectedRecipeId === recipe.id ? '已选中' : '点击选中'}
-                </Text>
-              </View>
-            ))}
-          </View>
-        ) : (
-          <EmptyState
-            tone='amber'
-            title='暂无菜谱'
-            description='先在空间里新建一个菜谱，再回来发起点餐任务。'
-          />
-        )}
+        <AsyncContainer
+          loading={recipesLoading && recipes.length === 0}
+          data={recipes}
+          skeleton={<View><SkeletonCard /><SkeletonCard /></View>}
+          empty={<EmptyState tone='amber' title='暂无菜谱' description='先在空间里新建一个菜谱，再回来发起点餐任务。' />}
+        >
+          {(recipeList) => (
+            <View>
+              {recipeList.map((recipe: Recipe) => (
+                <Pressable key={recipe.id} onClick={() => setSelectedRecipeId(recipe.id)}>
+                  <View className={selectedRecipeId === recipe.id ? 'feature-list-card feature-list-card--amber' : 'feature-list-card'}>
+                    <Text className='feature-list-card__title'>{recipe.name}</Text>
+                    <Text className='feature-list-card__meta'>
+                      {selectedRecipeId === recipe.id ? '已选中' : '点击选中'}
+                    </Text>
+                  </View>
+                </Pressable>
+              ))}
+            </View>
+          )}
+        </AsyncContainer>
       </SectionCard>
 
       <SectionCard
@@ -159,52 +153,43 @@ export default function Order() {
         meta={`${assignees.length} 人可接任务`}
         variant='soft'
       >
-        {assignees.length > 0 ? (
-          <View>
-            {assignees.map((member) => {
-              const subtitle = getMemberSubtitle(member)
-
-              return (
-                <View
-                  key={member.id}
-                  className={
-                    selectedAssigneeId === member.id
-                      ? 'feature-list-card feature-list-card--rose'
-                      : 'feature-list-card'
-                  }
-                  onClick={() => setSelectedAssigneeId(member.id)}
-                >
-                  <View className='flex items-center'>
-                    <MemberAvatar className='mr-3' member={member} size='sm' />
-                    <View>
-                      <Text className='feature-list-card__title'>
-                        {getMemberDisplayName(member)}
+        <AsyncContainer
+          loading={membersLoading && assignees.length === 0}
+          data={assignees}
+          skeleton={<View><SkeletonCard /><SkeletonCard /></View>}
+          empty={<EmptyState tone='rose' title='暂无可接任务成员' description='请先在成员设置里打开"可接任务"权限，再回来发起点餐。' />}
+        >
+          {(assigneeList) => (
+            <View>
+              {assigneeList.map((member) => {
+                const subtitle = getAssigneeSubtitle(member)
+                return (
+                  <Pressable key={member.id} onClick={() => setSelectedAssigneeId(member.id)}>
+                    <View className={selectedAssigneeId === member.id ? 'feature-list-card feature-list-card--rose' : 'feature-list-card'}>
+                      <View className='flex items-center'>
+                        <MemberAvatar className='mr-3' member={member} size='sm' />
+                        <View>
+                          <Text className='feature-list-card__title'>{getMemberDisplayName(member)}</Text>
+                          {subtitle ? <Text className='mt-1 block text-sm text-slate-500'>{subtitle}</Text> : null}
+                        </View>
+                      </View>
+                      <Text className='feature-list-card__meta'>
+                        {selectedAssigneeId === member.id ? '已选中' : '点击选中'}
                       </Text>
-                      {subtitle ? (
-                        <Text className='mt-1 block text-sm text-slate-500'>{subtitle}</Text>
-                      ) : null}
                     </View>
-                  </View>
-                  <Text className='feature-list-card__meta'>
-                    {selectedAssigneeId === member.id ? '已选中' : '点击选中'}
-                  </Text>
-                </View>
-              )
-            })}
-          </View>
-        ) : (
-          <EmptyState
-            tone='rose'
-            title='暂无可接任务成员'
-            description='请先在成员设置里打开“可接任务”权限，再回来发起点餐。'
-          />
-        )}
+                  </Pressable>
+                )
+              })}
+            </View>
+          )}
+        </AsyncContainer>
       </SectionCard>
 
       <BottomActionBar>
         <Button
           className='app-button app-button--primary'
-          disabled={!selectedRecipeId || !selectedAssigneeId}
+          disabled={!selectedRecipeId || !selectedAssigneeId || submitting}
+          loading={submitting}
           onClick={handleSubmit}
         >
           创建任务

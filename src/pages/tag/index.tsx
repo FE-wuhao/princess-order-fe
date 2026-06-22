@@ -1,24 +1,21 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useCallback, useEffect } from 'react'
 import { View, Text, Button } from '@tarojs/components'
-import Taro from '@tarojs/taro'
+import Taro, { useDidShow, useRouter } from '@tarojs/taro'
+import AsyncContainer from '@/components/async-container'
 import EmptyState from '@/components/empty-state'
 import PageHero from '@/components/page-hero'
+import Pressable from '@/components/pressable'
 import SectionCard from '@/components/section-card'
+import { SkeletonCard } from '@/components/skeleton'
 import StatusChip from '@/components/status-chip'
+import SubPageHeader from '@/components/sub-page-header'
+import { useRoleTemplateStore } from '@/stores/useRoleTemplateStore'
 import { tagApi } from '@/services/api'
 import { showErrorToast } from '@/utils/error'
+import { getRouteNumberParam, reLaunchToWorkspaceEntry } from '@/utils/router'
+import type { WorkspaceRoleTemplate } from '@shared/types'
 
-interface RoleTemplate {
-  id: number
-  name: string
-  roleType: 'requester' | 'cook' | 'both' | 'neutral'
-  isDefault?: boolean
-}
-
-const roleOptions: Array<{
-  label: string
-  value: RoleTemplate['roleType']
-}> = [
+const roleOptions: Array<{ label: string; value: WorkspaceRoleTemplate['roleType'] }> = [
   { label: '点餐人', value: 'requester' },
   { label: '制作者', value: 'cook' },
   { label: '双角色', value: 'both' },
@@ -26,126 +23,61 @@ const roleOptions: Array<{
 ]
 
 export default function Tag() {
-  const [roleTemplates, setRoleTemplates] = useState<RoleTemplate[]>([])
-  const [loading, setLoading] = useState(false)
+  const roleTemplates = useRoleTemplateStore((s) => s.roleTemplates)
+  const loading = useRoleTemplateStore((s) => s.roleTemplatesMeta.loading)
+  const refreshRoleTemplates = useRoleTemplateStore((s) => s.refreshRoleTemplates)
 
-  const workspaceId = useMemo(() => {
-    const params = Taro.getCurrentInstance().router?.params
-    return parseInt(params?.workspaceId || '0')
-  }, [])
+  const router = useRouter()
+  const workspaceId = getRouteNumberParam(router.params, 'workspaceId')
 
-  const loadRoleTemplates = useCallback(async () => {
-    setLoading(true)
-    try {
-      const data = await tagApi.getList(workspaceId)
-      setRoleTemplates(data || [])
-    } catch (error) {
-      showErrorToast(error, '加载失败')
-    } finally {
-      setLoading(false)
-    }
-  }, [workspaceId])
+  const loadData = useCallback(async () => {
+    if (!workspaceId) { reLaunchToWorkspaceEntry(); return }
+    await refreshRoleTemplates(true)
+  }, [workspaceId, refreshRoleTemplates])
 
-  useEffect(() => {
-    loadRoleTemplates()
-  }, [loadRoleTemplates])
+  useEffect(() => { loadData() }, [loadData])
+  useDidShow(() => { refreshRoleTemplates() })
 
   const handleCreate = async () => {
-    const nameResult = await Taro.showModal({
-      title: '新建称谓模板',
-      editable: true,
-      placeholderText: '例如：管家、小厨、主厨',
-      confirmText: '下一步',
-    })
-
-    if (!nameResult.confirm) {
-      return
-    }
-
+    const nameResult = await Taro.showModal({ title: '新建称谓模板', editable: true, placeholderText: '例如：管家、小厨、主厨', confirmText: '下一步' })
+    if (!nameResult.confirm) return
     const name = nameResult.content?.trim()
-    if (!name) {
-      Taro.showToast({
-        title: '请输入模板名称',
-        icon: 'none',
-      })
-      return
-    }
+    if (!name) { Taro.showToast({ title: '请输入模板名称', icon: 'none' }); return }
 
-    const roleTypeResult = await Taro.showActionSheet({
-      itemList: roleOptions.map((option) => option.label),
-    })
-
+    const roleTypeResult = await Taro.showActionSheet({ itemList: roleOptions.map((o) => o.label) })
     const selectedRoleType = roleOptions[roleTypeResult.tapIndex]?.value
-    if (!selectedRoleType) {
-      return
-    }
+    if (!selectedRoleType) return
 
     try {
       Taro.showLoading({ title: '创建中...' })
       await tagApi.create(workspaceId, name, selectedRoleType)
       Taro.hideLoading()
-      Taro.showToast({
-        title: '已创建',
-        icon: 'success',
-      })
-      await loadRoleTemplates()
-    } catch (error) {
-      Taro.hideLoading()
-      showErrorToast(error, '创建失败')
-    }
+      Taro.showToast({ title: '已创建', icon: 'success' })
+      await refreshRoleTemplates(true)
+    } catch (error) { Taro.hideLoading(); showErrorToast(error, '创建失败') }
   }
 
-  const handleDelete = async (roleTemplate: RoleTemplate) => {
-    const result = await Taro.showModal({
-      title: '删除称谓模板',
-      content: `确定删除「${roleTemplate.name}」吗？`,
-      confirmText: '删除',
-    })
-
-    if (!result.confirm) {
-      return
-    }
-
+  const handleDelete = async (template: WorkspaceRoleTemplate) => {
+    const result = await Taro.showModal({ title: '删除称谓模板', content: `确定删除「${template.name}」吗？`, confirmText: '删除' })
+    if (!result.confirm) return
     try {
       Taro.showLoading({ title: '删除中...' })
-      await tagApi.delete(workspaceId, roleTemplate.id)
+      await tagApi.delete(workspaceId, template.id)
       Taro.hideLoading()
-      Taro.showToast({
-        title: '已删除',
-        icon: 'success',
-      })
-      await loadRoleTemplates()
-    } catch (error) {
-      Taro.hideLoading()
-      showErrorToast(error, '删除失败')
-    }
+      Taro.showToast({ title: '已删除', icon: 'success' })
+      await refreshRoleTemplates(true)
+    } catch (error) { Taro.hideLoading(); showErrorToast(error, '删除失败') }
   }
 
-  if (loading) {
-    return (
-      <View className='page-shell px-4 py-5'>
-        <Text className='block text-center text-gray-500'>加载中...</Text>
-      </View>
-    )
-  }
-
-  const roleLabel = (roleType: RoleTemplate['roleType']) =>
-    roleOptions.find((item) => item.value === roleType)?.label || '未定义'
-
-  const roleTone = (roleType: RoleTemplate['roleType']) =>
-    roleType === 'requester'
-      ? 'warning'
-      : roleType === 'cook'
-      ? 'accent'
-      : roleType === 'both'
-      ? 'success'
-      : 'neutral'
+  const roleLabel = (rt: WorkspaceRoleTemplate['roleType']) => roleOptions.find((o) => o.value === rt)?.label || '未定义'
+  const roleTone = (rt: WorkspaceRoleTemplate['roleType']) =>
+    rt === 'requester' ? 'warning' : rt === 'cook' ? 'accent' : rt === 'both' ? 'success' : ('neutral' as const)
 
   return (
     <View className='page-shell px-4 py-5'>
+      <SubPageHeader title='称谓模板' description='沉淀空间内常用的身份叫法。' />
       <PageHero
-        badge='Role Templates'
-        title='称谓模板'
+        badge='Role Templates' title='称谓模板'
         description='称谓模板用于沉淀空间里的常用身份叫法，成员页会直接引用它。'
         tone='brand'
         stats={
@@ -162,53 +94,35 @@ export default function Tag() {
             </View>
           </View>
         }
-        actions={
-          <Button className='app-button app-button--primary' onClick={handleCreate}>
-            新建模板
-          </Button>
-        }
+        actions={<Button className='app-button app-button--primary' onClick={handleCreate}>新建模板</Button>}
       />
 
-      <SectionCard
-        title='模板列表'
-        description='双角色适合既能发任务也能接任务的人，其余模板更偏单一职责。'
-        meta={`${roleTemplates.length} 条`}
-        variant='soft'
-      >
-        {roleTemplates.length > 0 ? (
-          <View>
-            {roleTemplates.map((roleTemplate) => (
-              <View key={roleTemplate.id} className='feature-list-card'>
-                <View className='flex items-center justify-between'>
-                  <Text className='feature-list-card__title'>{roleTemplate.name}</Text>
-                  <StatusChip
-                    label={roleLabel(roleTemplate.roleType)}
-                    tone={roleTone(roleTemplate.roleType)}
-                  />
-                </View>
-                <Text className='feature-list-card__meta'>
-                  {roleTemplate.isDefault ? '默认模板' : '自定义模板'}
-                </Text>
-                {!roleTemplate.isDefault ? (
-                  <View className='mt-3'>
-                    <Button
-                      className='app-button app-button--ghost app-button--mini'
-                      onClick={() => handleDelete(roleTemplate)}
-                    >
-                      删除模板
-                    </Button>
+      <SectionCard title='模板列表' description='双角色适合既能发任务也能接任务的人。' meta={`${roleTemplates.length} 条`} variant='soft'>
+        <AsyncContainer
+          loading={loading && roleTemplates.length === 0}
+          data={roleTemplates}
+          skeleton={<View><SkeletonCard /><SkeletonCard /></View>}
+          empty={<EmptyState tone='gray' title='暂无称谓模板' description='先从这里沉淀一套常用称谓，成员页会更好配置。' />}
+        >
+          {(templates) => (
+            <View>
+              {templates.map((tpl) => (
+                <View key={tpl.id} className='feature-list-card'>
+                  <View className='flex items-center justify-between'>
+                    <Text className='feature-list-card__title'>{tpl.name}</Text>
+                    <StatusChip label={roleLabel(tpl.roleType)} tone={roleTone(tpl.roleType)} />
                   </View>
-                ) : null}
-              </View>
-            ))}
-          </View>
-        ) : (
-          <EmptyState
-            tone='gray'
-            title='暂无称谓模板'
-            description='先从这里沉淀一套常用称谓，成员页会更好配置。'
-          />
-        )}
+                  <Text className='feature-list-card__meta'>{tpl.isDefault ? '默认模板' : '自定义模板'}</Text>
+                  {!tpl.isDefault ? (
+                    <View className='mt-3'>
+                      <Button className='app-button app-button--ghost app-button--mini' onClick={() => handleDelete(tpl)}>删除模板</Button>
+                    </View>
+                  ) : null}
+                </View>
+              ))}
+            </View>
+          )}
+        </AsyncContainer>
       </SectionCard>
     </View>
   )

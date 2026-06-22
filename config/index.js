@@ -32,6 +32,7 @@ module.exports = {
   },
   alias: {
     "@": path.resolve(__dirname, "..", "src"),
+    "@shared": path.resolve(__dirname, "..", "..", "shared"),
   },
   env: config.env || {},
   mini: {
@@ -50,7 +51,7 @@ module.exports = {
         },
       },
       cssModules: {
-        enable: false,
+        enable: true,
         config: {
           namingPattern: "module",
           generateScopedName: "[name]__[local]___[hash:base64:5]",

@@ -1,3 +1,5 @@
+// 状态显示元信息 — 与 shared/types/order.ts 和 shared/types/notification.ts 保持同步
+
 export type OrderStatus =
   | 'created'
   | 'accepted'

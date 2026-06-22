@@ -1,0 +1,144 @@
+// ═══════════════════════════════════════════
+//   动画与微交互系统
+//   小程序兼容：仅使用 opacity + transform（GPU 加速属性）
+//   H5 增强：额外使用 filter/box-shadow/backdrop-filter
+// ═══════════════════════════════════════════
+
+// ── 基础入场动画 ──
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// ── 脉冲动画（骨架屏等）──
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+// ── 工具类 — 动画应用 ──
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease both;
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.4s ease both;
+}
+
+.animate-fade-in-down {
+  animation: fadeInDown 0.3s ease both;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.25s ease both;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.4s ease both;
+}
+
+// ── stagger 延迟入场（列表项逐项出现）──
+
+.animate-stagger > *:nth-child(1) { animation-delay: 0ms; }
+.animate-stagger > *:nth-child(2) { animation-delay: 60ms; }
+.animate-stagger > *:nth-child(3) { animation-delay: 120ms; }
+.animate-stagger > *:nth-child(4) { animation-delay: 180ms; }
+.animate-stagger > *:nth-child(5) { animation-delay: 240ms; }
+.animate-stagger > *:nth-child(6) { animation-delay: 300ms; }
+.animate-stagger > *:nth-child(7) { animation-delay: 360ms; }
+.animate-stagger > *:nth-child(8) { animation-delay: 420ms; }
+.animate-stagger > *:nth-child(9) { animation-delay: 480ms; }
+.animate-stagger > *:nth-child(10) { animation-delay: 540ms; }
+
+// ── 弹窗动画 ──
+
+.dialog-mask {
+  animation: fadeIn 0.2s ease both;
+}
+
+.dialog-card {
+  animation: scaleIn 0.25s ease both;
+}
+
+// ── H5 增强动画（小程序不支持但不会报错，直接忽略）──
+
+/* stylelint-disable-next-line media-feature-name-no-unknown */
+@media (hover: hover) {
+  // H5 专用 shimmer 效果
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  // H5 按钮悬浮效果
+  .app-button:not(:disabled):not([disabled]):hover {
+    transform: translateY(-1px);
+    box-shadow: var(--ui-shadow-floating, 0 10px 24px rgba(116, 73, 95, 0.14));
+  }
+
+  .app-button:not(:disabled):not([disabled]):active {
+    transform: scale(0.96);
+    transition: transform 0.08s ease;
+  }
+
+  // H5 卡片悬浮效果
+  .feature-list-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--ui-shadow-floating, 0 10px 24px rgba(116, 73, 95, 0.14));
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  // H5 输入框聚焦增强
+  .form-control:focus {
+    border-color: var(--ui-brand-500, #c65a72);
+    box-shadow: 0 0 0 3px rgba(198, 90, 114, 0.12);
+    outline: none;
+  }
+}

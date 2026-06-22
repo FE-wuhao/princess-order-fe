@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Button, Input, Text, View } from '@tarojs/components'
 import Taro from '@tarojs/taro'
+import FormField from '@/components/form-field'
 import PageHero from '@/components/page-hero'
 import SectionCard from '@/components/section-card'
+import { APP_VERSION } from '@/config/app-version'
 import { accountLogin, accountRegister, checkAuth } from '@/utils/auth'
 import { showErrorToast } from '@/utils/error'
 
@@ -13,41 +15,38 @@ export default function LoginPage() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [errors, setErrors] = useState<{ username?: string; password?: string }>({})
+
+  const canSubmit = username.trim().length >= 3 && password.length >= 6
 
   useEffect(() => {
     if (checkAuth()) {
-      Taro.switchTab({ url: '/pages/index/index' })
+      Taro.reLaunch({ url: '/pages/workspace-entry/index' })
     }
   }, [])
 
+  const validate = (): boolean => {
+    const next: { username?: string; password?: string } = {}
+    if (username.trim().length < 3) next.username = '用户名至少 3 位'
+    if (password.length < 6) next.password = '密码至少 6 位'
+    setErrors(next)
+    return Object.keys(next).length === 0
+  }
+
   const handleSubmit = async () => {
-    const name = username.trim()
-    const pwd = password
-
-    if (!name) {
-      Taro.showToast({ title: '请输入用户名', icon: 'none' })
-      return
-    }
-
-    if (pwd.length < 6) {
-      Taro.showToast({ title: '密码至少 6 位', icon: 'none' })
-      return
-    }
-
-    if (submitting) {
-      return
-    }
+    if (submitting) return
+    if (!validate()) return
 
     setSubmitting(true)
     try {
       Taro.showLoading({ title: mode === 'login' ? '登录中...' : '注册中...' })
       if (mode === 'login') {
-        await accountLogin(name, pwd)
+        await accountLogin(username.trim(), password)
       } else {
-        await accountRegister(name, pwd)
+        await accountRegister(username.trim(), password)
       }
       Taro.hideLoading()
-      Taro.switchTab({ url: '/pages/index/index' })
+      Taro.reLaunch({ url: '/pages/workspace-entry/index' })
     } catch (error) {
       Taro.hideLoading()
       showErrorToast(error, mode === 'login' ? '登录失败' : '注册失败')
@@ -56,58 +55,60 @@ export default function LoginPage() {
     }
   }
 
-  const toggleMode = () => {
-    setMode((current) => (current === 'login' ? 'register' : 'login'))
-  }
-
   return (
-    <View className='page-shell page-shell--sky px-4 py-5'>
+    <View
+      className='page-shell page-shell--sky page-shell--login px-4 py-5 animate-fade-in-down'
+      style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}
+    >
       <PageHero
         title='公主请点餐吧'
         subtitle={mode === 'login' ? '账号登录' : '注册新账号'}
       />
 
       <View className='mt-4'>
-      <SectionCard title={mode === 'login' ? '登录' : '注册'} variant='accent'>
-        <View className='form-field'>
-          <Text className='form-label'>用户名</Text>
-          <Input
-            className='form-control form-control--on-tint'
-            value={username}
-            maxlength={32}
-            placeholder='字母、数字、下划线，3-32 位'
-            onInput={(event) => setUsername(event.detail.value)}
-          />
-        </View>
+        <SectionCard title={mode === 'login' ? '登录' : '注册'} variant='accent'>
+          <FormField label='用户名' error={errors.username}>
+            <Input
+              className='form-control form-control--on-tint'
+              confirmType='done'
+              value={username}
+              maxlength={32}
+              placeholder='字母、数字、下划线，3-32 位'
+              onConfirm={handleSubmit}
+              onInput={(event) => { setUsername(event.detail.value); setErrors((e) => ({ ...e, username: undefined })) }}
+            />
+          </FormField>
 
-        <View className='form-field'>
-          <Text className='form-label'>密码</Text>
-          <Input
-            className='form-control form-control--on-tint'
-            password
-            value={password}
-            maxlength={64}
-            placeholder='至少 6 位'
-            onInput={(event) => setPassword(event.detail.value)}
-          />
-        </View>
+          <FormField label='密码' error={errors.password}>
+            <Input
+              className='form-control form-control--on-tint'
+              confirmType='done'
+              password
+              value={password}
+              maxlength={64}
+              placeholder='至少 6 位'
+              onConfirm={handleSubmit}
+              onInput={(event) => { setPassword(event.detail.value); setErrors((e) => ({ ...e, password: undefined })) }}
+            />
+          </FormField>
 
-        <View className='action-stack mt-4'>
-          <Button
-            className='app-button app-button--primary'
-            loading={submitting}
-            disabled={submitting}
-            onClick={handleSubmit}
-          >
-            {mode === 'login' ? '登录' : '注册并登录'}
-          </Button>
-
-          <Button className='app-button app-button--ghost' onClick={toggleMode}>
-            {mode === 'login' ? '没有账号？去注册' : '已有账号？去登录'}
-          </Button>
-        </View>
-      </SectionCard>
+          <View className='action-stack mt-4'>
+            <Button
+              className='app-button app-button--primary'
+              loading={submitting}
+              disabled={submitting || !canSubmit}
+              onClick={handleSubmit}
+            >
+              {mode === 'login' ? '登录' : '注册并登录'}
+            </Button>
+            <Button className='app-button app-button--ghost' onClick={() => setMode(mode === 'login' ? 'register' : 'login')}>
+              {mode === 'login' ? '没有账号？去注册' : '已有账号？去登录'}
+            </Button>
+          </View>
+        </SectionCard>
       </View>
+
+      <View className='login-page__version'>版本号：{APP_VERSION}</View>
     </View>
   )
 }

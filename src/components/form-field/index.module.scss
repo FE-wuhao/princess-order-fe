@@ -1,0 +1,51 @@
+// FormField 样式
+
+.form-field {
+  margin-bottom: 16px;
+}
+
+.form-field__label-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.form-field__required {
+  color: var(--ui-danger-text, #c2415d);
+  margin-right: 4px;
+  font-weight: 600;
+}
+
+.form-field__error {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--ui-danger-text, #c2415d);
+  animation: form-error-shake 0.3s ease;
+}
+
+.form-field__hint {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--ui-text-tertiary, #a18c98);
+}
+
+/* 错误抖动动画 */
+@keyframes form-error-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-4px);
+  }
+  75% {
+    transform: translateX(4px);
+  }
+}
+
+/* 错误状态下的输入框边框 */
+.form-field--error :global(.form-control) {
+  border-color: var(--ui-danger-text, #c2415d);
+}

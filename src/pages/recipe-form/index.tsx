@@ -1,11 +1,17 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Button, Input, Picker, Text, Textarea, View } from '@tarojs/components'
-import Taro from '@tarojs/taro'
+import Taro, { useRouter } from '@tarojs/taro'
 import BottomActionBar from '@/components/bottom-action-bar'
+import FormField from '@/components/form-field'
+import InputDialog from '@/components/input-dialog'
 import PageHero from '@/components/page-hero'
 import SectionCard from '@/components/section-card'
+import { SkeletonCard } from '@/components/skeleton'
+import SubPageHeader from '@/components/sub-page-header'
+import { useFormList } from '@/hooks/useFormList'
 import { recipeApi } from '@/services/api'
 import { showErrorToast } from '@/utils/error'
+import { getRouteNumberParam, reLaunchToWorkspaceEntry } from '@/utils/router'
 
 type Difficulty = 'easy' | 'normal' | 'hard'
 
@@ -38,15 +44,11 @@ const createEmptyMethod = (): RecipeMethodFormItem => ({
 })
 
 export default function RecipeForm() {
-  const { workspaceId, recipeId } = useMemo(() => {
-    const params = Taro.getCurrentInstance().router?.params
-
-    return {
-      workspaceId: parseInt(params?.workspaceId || '0'),
-      recipeId: parseInt(params?.id || '0'),
-    }
-  }, [])
+  const router = useRouter()
+  const workspaceId = getRouteNumberParam(router.params, 'workspaceId')
+  const recipeId = getRouteNumberParam(router.params, 'id')
   const isEdit = recipeId > 0
+
   const [loading, setLoading] = useState(isEdit)
   const [saving, setSaving] = useState(false)
   const [archiving, setArchiving] = useState(false)
@@ -55,55 +57,56 @@ export default function RecipeForm() {
   const [difficulty, setDifficulty] = useState<Difficulty>('normal')
   const [estimatedMinutes, setEstimatedMinutes] = useState('')
   const [servingSize, setServingSize] = useState('')
-  const [ingredients, setIngredients] = useState<RecipeIngredientFormItem[]>([
-    createEmptyIngredient(),
-  ])
-  const [methods, setMethods] = useState<RecipeMethodFormItem[]>([createEmptyMethod()])
 
-  const filledIngredientCount = useMemo(
-    () => ingredients.filter((item) => item.name.trim()).length,
-    [ingredients],
-  )
+  // 动态列表 — 用 useFormList hook 管理
+  const ingredients = useFormList<RecipeIngredientFormItem>({
+    createEmpty: createEmptyIngredient,
+  })
 
-  const filledMethodCount = useMemo(
-    () => methods.filter((item) => item.content.trim()).length,
-    [methods],
-  )
+  const methods = useFormList<RecipeMethodFormItem>({
+    createEmpty: createEmptyMethod,
+  })
 
+  // AI 生成弹窗
+  const [aiDialogVisible, setAiDialogVisible] = useState(false)
+  const [aiPromptDraft, setAiPromptDraft] = useState('')
+  const [aiGenerating, setAiGenerating] = useState(false)
+
+  // ── 加载已有菜谱 ──
   useEffect(() => {
-    if (!isEdit || !workspaceId) {
+    if (!workspaceId) {
+      reLaunchToWorkspaceEntry()
       return
     }
+    if (!isEdit || !workspaceId) return
 
     const loadRecipe = async () => {
       setLoading(true)
-
       try {
         const recipe = await recipeApi.getDetail(workspaceId, recipeId)
         setName(recipe?.name || '')
         setDescription(recipe?.description || '')
         setDifficulty(recipe?.difficulty || 'normal')
-        setEstimatedMinutes(
-          recipe?.estimatedMinutes ? String(recipe.estimatedMinutes) : '',
-        )
+        setEstimatedMinutes(recipe?.estimatedMinutes ? String(recipe.estimatedMinutes) : '')
         setServingSize(recipe?.servingSize ? String(recipe.servingSize) : '')
-        setIngredients(
-          recipe?.ingredients?.length
-            ? recipe.ingredients.map((ingredient) => ({
-                name: ingredient.name || '',
-                amount: ingredient.amount || '',
-                unit: ingredient.unit || '',
-              }))
-            : [createEmptyIngredient()],
-        )
-        setMethods(
-          recipe?.methods?.length
-            ? recipe.methods.map((method) => ({
-                content: method.content || '',
-                source: method.source || 'manual',
-              }))
-            : [createEmptyMethod()],
-        )
+
+        if (recipe?.ingredients?.length) {
+          ingredients.setItems(
+            recipe.ingredients.map((ing) => ({
+              name: ing.name || '',
+              amount: ing.amount || '',
+              unit: ing.unit || '',
+            })),
+          )
+        }
+        if (recipe?.methods?.length) {
+          methods.setItems(
+            recipe.methods.map((m) => ({
+              content: m.content || '',
+              source: m.source || 'manual',
+            })),
+          )
+        }
       } catch (error) {
         showErrorToast(error, '加载失败')
       } finally {
@@ -112,111 +115,40 @@ export default function RecipeForm() {
     }
 
     loadRecipe()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workspaceId, isEdit, recipeId])
 
-  const updateIngredient = (
-    index: number,
-    key: keyof RecipeIngredientFormItem,
-    value: string,
-  ) => {
-    setIngredients((current) =>
-      current.map((item, itemIndex) =>
-        itemIndex === index ? { ...item, [key]: value } : item,
-      ),
-    )
-  }
-
-  const updateMethod = (
-    index: number,
-    key: keyof RecipeMethodFormItem,
-    value: string,
-  ) => {
-    setMethods((current) =>
-      current.map((item, itemIndex) =>
-        itemIndex === index ? { ...item, [key]: value } : item,
-      ),
-    )
-  }
-
-  const appendIngredient = () => {
-    setIngredients((current) => [...current, createEmptyIngredient()])
-  }
-
-  const removeIngredient = (index: number) => {
-    if (ingredients.length === 1) {
-      setIngredients([createEmptyIngredient()])
-      return
-    }
-
-    setIngredients((current) => current.filter((_, itemIndex) => itemIndex !== index))
-  }
-
-  const appendMethod = () => {
-    setMethods((current) => [...current, createEmptyMethod()])
-  }
-
-  const removeMethod = (index: number) => {
-    if (methods.length === 1) {
-      setMethods([createEmptyMethod()])
-      return
-    }
-
-    setMethods((current) => current.filter((_, itemIndex) => itemIndex !== index))
-  }
-
+  // ── 保存 ──
   const getPreparedIngredients = () =>
-    ingredients
-      .map((ingredient) => ({
-        name: ingredient.name.trim(),
-        amount: ingredient.amount.trim(),
-        unit: ingredient.unit.trim(),
-      }))
-      .filter((ingredient) => ingredient.name)
-      .map((ingredient, index) => ({
-        ...ingredient,
+    ingredients.items
+      .filter((item) => item.name.trim())
+      .map((item, index) => ({
+        name: item.name.trim(),
+        amount: item.amount.trim(),
+        unit: item.unit.trim(),
         orderIndex: index,
       }))
 
   const getPreparedMethods = () =>
-    methods
-      .map((method) => ({
-        content: method.content.trim(),
-        source: method.source,
-      }))
-      .filter((method) => method.content)
-      .map((method, index) => ({
-        ...method,
+    methods.items
+      .filter((item) => item.content.trim())
+      .map((item, index) => ({
+        content: item.content.trim(),
+        source: item.source,
         orderIndex: index,
       }))
 
   const handleSave = async () => {
-    if (saving) {
-      return
-    }
-
-    if (!workspaceId) {
-      Taro.showToast({
-        title: '空间信息异常',
-        icon: 'none',
-      })
-      return
-    }
+    if (saving || !workspaceId) return
 
     if (!name.trim()) {
-      Taro.showToast({
-        title: '请先填写菜名',
-        icon: 'none',
-      })
+      Taro.showToast({ title: '请先填写菜名', icon: 'none' })
       return
     }
 
     const preparedMethods = getPreparedMethods()
-
     if (preparedMethods.length === 0) {
-      Taro.showToast({
-        title: '至少写一条做法',
-        icon: 'none',
-      })
+      Taro.showToast({ title: '至少写一条做法', icon: 'none' })
       return
     }
 
@@ -237,9 +169,7 @@ export default function RecipeForm() {
         : await recipeApi.create(workspaceId, payload)
       const targetRecipeId = recipe?.id || recipeId
 
-      if (!targetRecipeId) {
-        throw new Error('recipe-id-missing')
-      }
+      if (!targetRecipeId) throw new Error('recipe-id-missing')
 
       await Promise.all([
         recipeApi.replaceIngredients(workspaceId, targetRecipeId, getPreparedIngredients()),
@@ -247,11 +177,7 @@ export default function RecipeForm() {
       ])
 
       Taro.hideLoading()
-      Taro.showToast({
-        title: isEdit ? '保存成功' : '创建成功',
-        icon: 'success',
-      })
-
+      Taro.showToast({ title: isEdit ? '保存成功' : '创建成功', icon: 'success' })
       setTimeout(() => {
         Taro.redirectTo({
           url: `/pages/recipe/index?id=${targetRecipeId}&workspaceId=${workspaceId}`,
@@ -265,35 +191,70 @@ export default function RecipeForm() {
     }
   }
 
-  const handleArchive = async () => {
-    if (!isEdit || archiving) {
+  // ── AI 生成 ──
+  const handleGenerateByAi = async () => {
+    const prompt = aiPromptDraft.trim()
+    if (!prompt) {
+      Taro.showToast({ title: '请先描述想做什么菜', icon: 'none' })
       return
     }
+
+    setAiGenerating(true)
+    try {
+      const draft = await recipeApi.generateDraft(prompt)
+      setName(draft?.name || '')
+      setDescription(draft?.description || '')
+      setDifficulty(draft?.difficulty || 'normal')
+      setEstimatedMinutes(draft?.estimatedMinutes ? String(draft.estimatedMinutes) : '')
+      setServingSize(draft?.servingSize ? String(draft.servingSize) : '')
+
+      ingredients.setItems(
+        draft?.ingredients?.length
+          ? draft.ingredients.map((ing) => ({
+              name: ing.name || '',
+              amount: ing.amount || '',
+              unit: ing.unit || '',
+            }))
+          : [createEmptyIngredient()],
+      )
+      methods.setItems(
+        draft?.methods?.length
+          ? draft.methods.map((content) => ({
+              content,
+              source: 'ai',
+            }))
+          : [createEmptyMethod()],
+      )
+
+      setAiDialogVisible(false)
+      setAiPromptDraft('')
+      Taro.showToast({ title: '已生成草稿', icon: 'success' })
+    } catch (error) {
+      showErrorToast(error, 'AI 生成失败')
+    } finally {
+      setAiGenerating(false)
+    }
+  }
+
+  // ── 归档 ──
+  const handleArchive = async () => {
+    if (!isEdit || archiving) return
 
     const result = await Taro.showModal({
       title: '归档菜谱',
       content: '归档后不会出现在默认菜谱列表里，仍可查看历史记录。',
       confirmText: '确认归档',
     })
-
-    if (!result.confirm) {
-      return
-    }
+    if (!result.confirm) return
 
     setArchiving(true)
     Taro.showLoading({ title: '归档中...' })
-
     try {
       await recipeApi.archive(workspaceId, recipeId)
       Taro.hideLoading()
-      Taro.showToast({
-        title: '已归档',
-        icon: 'success',
-      })
+      Taro.showToast({ title: '已归档', icon: 'success' })
       setTimeout(() => {
-        Taro.redirectTo({
-          url: `/pages/group/index?id=${workspaceId}`,
-        })
+        Taro.redirectTo({ url: `/pages/group/index?id=${workspaceId}` })
       }, 400)
     } catch (error) {
       Taro.hideLoading()
@@ -303,165 +264,176 @@ export default function RecipeForm() {
     }
   }
 
+  // ── 加载中 ──
   if (loading) {
     return (
       <View className='page-shell page-shell--sunset px-4 py-5'>
-        <Text className='block text-center text-gray-500'>加载中...</Text>
+        <SkeletonCard />
+        <SkeletonCard />
+        <SkeletonCard />
       </View>
     )
   }
 
+  // ── 渲染 ──
   return (
     <View className='page-shell page-shell--sunset px-4 py-5 pb-32'>
+      <SubPageHeader
+        title={isEdit ? '编辑菜谱' : '新建菜谱'}
+        description='需要返回时不用依赖浏览器返回，直接点这里即可。'
+      />
       <PageHero
         badge='Recipe Studio'
         title={isEdit ? '编辑菜谱' : '新建菜谱'}
-        description='先把基础信息、食材和步骤整理好，后面发单会顺手很多。'
+        description='先把基础信息、食材和步骤整理好；如果懒得从零写，可以先让 AI 生成草稿。'
         tone='sunset'
         stats={
           <View className='hero-stat-grid'>
             <View className='hero-stat-card'>
               <Text className='hero-stat-card__label'>已填食材</Text>
-              <Text className='hero-stat-card__value'>{filledIngredientCount}</Text>
+              <Text className='hero-stat-card__value'>{ingredients.validCount}</Text>
               <Text className='hero-stat-card__hint'>有名称的食材会参与保存</Text>
             </View>
             <View className='hero-stat-card'>
               <Text className='hero-stat-card__label'>已写步骤</Text>
-              <Text className='hero-stat-card__value'>{filledMethodCount}</Text>
+              <Text className='hero-stat-card__value'>{methods.validCount}</Text>
               <Text className='hero-stat-card__hint'>至少保留一条有效做法</Text>
             </View>
           </View>
         }
+        actions={
+          <Button
+            className='app-button app-button--ghost'
+            onClick={() => {
+              setAiPromptDraft('')
+              setAiDialogVisible(true)
+            }}
+          >
+            AI 生成草稿
+          </Button>
+        }
       />
 
+      {/* 基础信息 */}
       <SectionCard
         title='基础信息'
         description='菜名和描述会出现在发单和任务详情里，尽量写清楚一点。'
         variant='accent'
       >
-        <View className='form-field'>
-          <Text className='form-label'>菜名</Text>
+        <FormField label='菜名'>
           <Input
             className='form-control'
+            confirmType='done'
             placeholder='比如：番茄滑蛋'
             value={name}
+            onConfirm={handleSave}
             onInput={(event) => setName(event.detail.value)}
           />
-        </View>
+        </FormField>
 
-        <View className='form-field'>
-          <Text className='form-label'>一句话描述</Text>
+        <FormField label='一句话描述'>
           <Textarea
             className='form-control form-control--textarea'
             placeholder='写一点口味、场景或提醒，比如下饭、十分钟快手菜'
             value={description}
             onInput={(event) => setDescription(event.detail.value)}
           />
-        </View>
+        </FormField>
 
-        <View className='form-field'>
-          <Text className='form-label'>难度</Text>
+        <FormField label='难度'>
           <Picker
             mode='selector'
             range={difficultyOptions.map((item) => item.label)}
             value={difficultyOptions.findIndex((item) => item.value === difficulty)}
             onChange={(event) => {
               const selected = difficultyOptions[Number(event.detail.value)]
-              if (!selected) {
-                return
-              }
-
-              setDifficulty(selected.value)
+              if (selected) setDifficulty(selected.value)
             }}
           >
             <View className='form-picker'>
               <Text className='form-picker__value'>
-                {difficultyOptions.find((item) => item.value === difficulty)?.label ||
-                  '选择难度'}
+                {difficultyOptions.find((item) => item.value === difficulty)?.label || '选择难度'}
               </Text>
             </View>
           </Picker>
-        </View>
+        </FormField>
 
         <View className='grid grid-cols-2 gap-3'>
-          <View className='form-field'>
-            <Text className='form-label'>预计时长（分钟）</Text>
+          <FormField label='预计时长（分钟）'>
             <Input
               className='form-control'
               type='number'
+              confirmType='done'
               placeholder='20'
               value={estimatedMinutes}
+              onConfirm={handleSave}
               onInput={(event) => setEstimatedMinutes(event.detail.value)}
             />
-          </View>
-          <View className='form-field'>
-            <Text className='form-label'>适合人数</Text>
+          </FormField>
+          <FormField label='适合人数'>
             <Input
               className='form-control'
               type='number'
+              confirmType='done'
               placeholder='2'
               value={servingSize}
+              onConfirm={handleSave}
               onInput={(event) => setServingSize(event.detail.value)}
             />
-          </View>
+          </FormField>
         </View>
       </SectionCard>
 
+      {/* 食材列表 */}
       <SectionCard
         title='食材'
         description='按行填写，没有名称的行不会保存。'
         actions={
-          <Button className='app-button app-button--secondary app-button--mini' onClick={appendIngredient}>
+          <Button className='app-button app-button--secondary app-button--mini' onClick={ingredients.appendItem}>
             新增食材
           </Button>
         }
-        meta={`${ingredients.length} 行`}
+        meta={`${ingredients.items.length} 行`}
         variant='soft'
       >
-        {ingredients.map((ingredient, index) => (
-          <View
-            key={`ingredient-${index}`}
-            className='feature-list-card feature-list-card--amber mb-3'
-          >
-            <View className='form-field'>
-              <Text className='form-label'>食材名</Text>
+        {ingredients.items.map((ingredient, index) => (
+          <View key={`ingredient-${index}`} className='feature-list-card feature-list-card--amber mb-3'>
+            <FormField label='食材名'>
               <Input
                 className='form-control form-control--on-tint'
+                confirmType='done'
                 placeholder='比如：番茄'
                 value={ingredient.name}
-                onInput={(event) =>
-                  updateIngredient(index, 'name', event.detail.value)
-                }
+                onConfirm={handleSave}
+                onInput={(event) => ingredients.updateItem(index, { name: event.detail.value })}
               />
-            </View>
+            </FormField>
 
             <View className='grid grid-cols-2 gap-3'>
-              <View className='form-field'>
-                <Text className='form-label'>数量</Text>
+              <FormField label='数量'>
                 <Input
                   className='form-control form-control--on-tint'
+                  confirmType='done'
                   placeholder='2'
                   value={ingredient.amount}
-                  onInput={(event) =>
-                    updateIngredient(index, 'amount', event.detail.value)
-                  }
+                  onConfirm={handleSave}
+                  onInput={(event) => ingredients.updateItem(index, { amount: event.detail.value })}
                 />
-              </View>
-              <View className='form-field'>
-                <Text className='form-label'>单位</Text>
+              </FormField>
+              <FormField label='单位'>
                 <Input
                   className='form-control form-control--on-tint'
+                  confirmType='done'
                   placeholder='个 / 克 / 勺'
                   value={ingredient.unit}
-                  onInput={(event) =>
-                    updateIngredient(index, 'unit', event.detail.value)
-                  }
+                  onConfirm={handleSave}
+                  onInput={(event) => ingredients.updateItem(index, { unit: event.detail.value })}
                 />
-              </View>
+              </FormField>
             </View>
 
             <View className='mt-2 text-right'>
-              <Text className='form-text-link' onClick={() => removeIngredient(index)}>
+              <Text className='form-text-link' onClick={() => ingredients.removeItem(index)}>
                 删除这项
               </Text>
             </View>
@@ -469,24 +441,22 @@ export default function RecipeForm() {
         ))}
       </SectionCard>
 
+      {/* 做法列表 */}
       <SectionCard
         title='做法'
         description='步骤尽量一句一事，执行人看起来更轻松。'
         actions={
-          <Button className='app-button app-button--secondary app-button--mini' onClick={appendMethod}>
+          <Button className='app-button app-button--secondary app-button--mini' onClick={methods.appendItem}>
             新增步骤
           </Button>
         }
-        meta={`${methods.length} 步`}
+        meta={`${methods.items.length} 步`}
       >
-        {methods.map((method, index) => (
-          <View
-            key={`method-${index}`}
-            className='feature-list-card feature-list-card--rose mb-3'
-          >
+        {methods.items.map((method, index) => (
+          <View key={`method-${index}`} className='feature-list-card feature-list-card--rose mb-3'>
             <View className='form-dynamic-head'>
               <Text className='feature-list-card__title'>步骤 {index + 1}</Text>
-              <Text className='form-text-link' onClick={() => removeMethod(index)}>
+              <Text className='form-text-link' onClick={() => methods.removeItem(index)}>
                 删除
               </Text>
             </View>
@@ -495,12 +465,13 @@ export default function RecipeForm() {
               className='form-control form-control--textarea-lg form-control--on-tint'
               placeholder='写清楚这个步骤做什么'
               value={method.content}
-              onInput={(event) => updateMethod(index, 'content', event.detail.value)}
+              onInput={(event) => methods.updateItem(index, { content: event.detail.value })}
             />
           </View>
         ))}
       </SectionCard>
 
+      {/* 底部操作栏 */}
       <BottomActionBar>
         <View className='action-row'>
           {isEdit ? (
@@ -522,6 +493,24 @@ export default function RecipeForm() {
           </Button>
         </View>
       </BottomActionBar>
+
+      {/* AI 生成弹窗 */}
+      <InputDialog
+        visible={aiDialogVisible}
+        title='AI 生成菜谱'
+        value={aiPromptDraft}
+        placeholder='例如：想做一个酸甜口、适合两个人、二十分钟内完成的鸡肉家常菜'
+        confirmText='生成'
+        loading={aiGenerating}
+        multiline
+        maxLength={500}
+        onChange={setAiPromptDraft}
+        onCancel={() => {
+          setAiDialogVisible(false)
+          setAiPromptDraft('')
+        }}
+        onConfirm={handleGenerateByAi}
+      />
     </View>
   )
 }

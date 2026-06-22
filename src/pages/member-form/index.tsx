@@ -1,47 +1,28 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import Taro, { useDidShow, useRouter } from '@tarojs/taro'
 import { Button, Input, Picker, Switch, Text, View } from '@tarojs/components'
-import Taro from '@tarojs/taro'
+import AsyncContainer from '@/components/async-container'
 import BottomActionBar from '@/components/bottom-action-bar'
+import FormField from '@/components/form-field'
 import MemberAvatar from '@/components/member-avatar'
 import PageHero from '@/components/page-hero'
 import SectionCard from '@/components/section-card'
+import { SkeletonCard } from '@/components/skeleton'
+import SubPageHeader from '@/components/sub-page-header'
 import { workspaceApi } from '@/services/api'
+import type { WorkspaceMemberView } from '@/services/workspace.api'
+import type { Workspace } from '@shared/types'
 import { showErrorToast } from '@/utils/error'
 import { getMemberDisplayName, getMemberSubtitle } from '@/utils/member'
+import { getRouteNumberParam, reLaunchToWorkspaceEntry } from '@/utils/router'
 
-interface WorkspaceMember {
-  id: number
-  userId: number
-  remark?: string | null
-  displayRole?: 'requester' | 'cook' | 'both'
-  tagId?: number | null
-  status?: 'active' | 'left' | 'removed'
-  canManageWorkspace?: boolean
-  canManageMembers?: boolean
-  canManageRecipes?: boolean
-  canCreateTask?: boolean
-  canAcceptTask?: boolean
-  user?: {
-    id: number
-    nickname?: string
-    avatar?: string
-  }
-  tag?: {
-    id: number
-    name: string
-  } | null
-}
-
-interface WorkspaceDetail {
-  id: number
-  name: string
-  members: WorkspaceMember[]
-}
+type DisplayRole = 'requester' | 'cook' | 'both'
+type MemberStatus = 'active' | 'left' | 'removed'
 
 interface MemberFormState {
   remark: string
-  displayRole: 'requester' | 'cook' | 'both'
-  status: 'active' | 'left' | 'removed'
+  displayRole: DisplayRole
+  status: MemberStatus
   canManageWorkspace: boolean
   canManageMembers: boolean
   canManageRecipes: boolean
@@ -49,336 +30,168 @@ interface MemberFormState {
   canAcceptTask: boolean
 }
 
-const roleOptions: Array<{ label: string; value: MemberFormState['displayRole'] }> = [
+const roleOptions: Array<{ label: string; value: DisplayRole }> = [
   { label: '点餐人', value: 'requester' },
   { label: '制作者', value: 'cook' },
   { label: '双角色', value: 'both' },
 ]
 
-const statusOptions: Array<{ label: string; value: MemberFormState['status'] }> = [
+const statusOptions: Array<{ label: string; value: MemberStatus }> = [
   { label: '正常', value: 'active' },
   { label: '已离开', value: 'left' },
   { label: '已移除', value: 'removed' },
 ]
 
-const permissionItems: Array<{
-  key: keyof Pick<
-    MemberFormState,
-    | 'canManageWorkspace'
-    | 'canManageMembers'
-    | 'canManageRecipes'
-    | 'canCreateTask'
-    | 'canAcceptTask'
-  >
-  title: string
-  description: string
-}> = [
-  {
-    key: 'canManageWorkspace',
-    title: '管理空间',
-    description: '可刷新邀请码、调整空间级配置',
-  },
-  {
-    key: 'canManageMembers',
-    title: '管理成员',
-    description: '可调整成员角色、权限和成员状态',
-  },
-  {
-    key: 'canManageRecipes',
-    title: '管理菜谱',
-    description: '可新增、编辑和归档菜谱',
-  },
-  {
-    key: 'canCreateTask',
-    title: '发起任务',
-    description: '可创建新的点餐任务',
-  },
-  {
-    key: 'canAcceptTask',
-    title: '接受制作',
-    description: '可被指定为任务执行人',
-  },
+const permissionItems: Array<{ key: keyof MemberFormState; title: string; description: string }> = [
+  { key: 'canManageWorkspace', title: '管理空间', description: '可刷新邀请码、调整空间级配置' },
+  { key: 'canManageMembers', title: '管理成员', description: '可调整成员角色、权限和成员状态' },
+  { key: 'canManageRecipes', title: '管理菜谱', description: '可新增、编辑和归档菜谱' },
+  { key: 'canCreateTask', title: '发起任务', description: '可创建新的点餐任务' },
+  { key: 'canAcceptTask', title: '接受制作', description: '可被指定为任务执行人' },
 ]
 
-const roleIndexByValue = roleOptions.reduce<Record<string, number>>(
-  (acc, option, index) => {
-    acc[option.value] = index
-    return acc
-  },
-  {},
-)
-
-const statusIndexByValue = statusOptions.reduce<Record<string, number>>(
-  (acc, option, index) => {
-    acc[option.value] = index
-    return acc
-  },
-  {},
-)
+const roleIndexByValue = roleOptions.reduce<Record<string, number>>((acc, o, i) => { acc[o.value] = i; return acc }, {} as Record<string, number>)
+const statusIndexByValue = statusOptions.reduce<Record<string, number>>((acc, o, i) => { acc[o.value] = i; return acc }, {} as Record<string, number>)
 
 export default function MemberForm() {
-  const [workspace, setWorkspace] = useState<WorkspaceDetail | null>(null)
-  const [member, setMember] = useState<WorkspaceMember | null>(null)
+  const [workspace, setWorkspace] = useState<Workspace | null>(null)
+  const [member, setMember] = useState<WorkspaceMemberView | null>(null)
   const [form, setForm] = useState<MemberFormState>({
-    remark: '',
-    displayRole: 'cook',
-    status: 'active',
-    canManageWorkspace: false,
-    canManageMembers: false,
-    canManageRecipes: true,
-    canCreateTask: false,
-    canAcceptTask: true,
+    remark: '', displayRole: 'cook', status: 'active',
+    canManageWorkspace: false, canManageMembers: false, canManageRecipes: true,
+    canCreateTask: false, canAcceptTask: true,
   })
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
 
-  const params = useMemo(() => {
-    const routerParams = Taro.getCurrentInstance().router?.params
-    return {
-      workspaceId: parseInt(routerParams?.workspaceId || '0'),
-      memberId: parseInt(routerParams?.memberId || '0'),
-    }
-  }, [])
+  const router = useRouter()
+  const workspaceId = getRouteNumberParam(router.params, 'workspaceId')
+  const memberId = getRouteNumberParam(router.params, 'memberId')
 
   const loadMember = useCallback(async () => {
-    if (!params.workspaceId || !params.memberId) {
-      return
-    }
-
+    if (!workspaceId || !memberId) { reLaunchToWorkspaceEntry(); return }
     setLoading(true)
     try {
-      const data = await workspaceApi.getDetail(params.workspaceId)
-      const currentMember = (data?.members || []).find(
-        (item) => item.id === params.memberId,
-      )
-
-      if (!currentMember) {
-        Taro.showToast({
-          title: '成员不存在',
-          icon: 'none',
-        })
-        return
-      }
-
+      const data = await workspaceApi.getDetail(workspaceId)
+      const currentMember = ((data?.members || []) as WorkspaceMemberView[]).find((item) => item.id === memberId)
+      if (!currentMember) { Taro.showToast({ title: '成员不存在', icon: 'none' }); return }
       setWorkspace(data)
       setMember(currentMember)
       setForm({
         remark: currentMember.remark || '',
-        displayRole: currentMember.displayRole || 'cook',
-        status: currentMember.status || 'active',
+        displayRole: (currentMember.displayRole as DisplayRole) || 'cook',
+        status: (currentMember.status as MemberStatus) || 'active',
         canManageWorkspace: Boolean(currentMember.canManageWorkspace),
         canManageMembers: Boolean(currentMember.canManageMembers),
         canManageRecipes: currentMember.canManageRecipes !== false,
         canCreateTask: Boolean(currentMember.canCreateTask),
         canAcceptTask: currentMember.canAcceptTask !== false,
       })
-    } catch (error) {
-      showErrorToast(error, '加载失败')
-    } finally {
-      setLoading(false)
-    }
-  }, [params.workspaceId, params.memberId])
+    } catch (error) { showErrorToast(error, '加载失败') }
+    finally { setLoading(false) }
+  }, [memberId, workspaceId])
 
-  useEffect(() => {
-    loadMember()
-  }, [loadMember])
-
-  const updatePermission = (
-    key: keyof Pick<
-      MemberFormState,
-      | 'canManageWorkspace'
-      | 'canManageMembers'
-      | 'canManageRecipes'
-      | 'canCreateTask'
-      | 'canAcceptTask'
-    >,
-    value: boolean,
-  ) => {
-    setForm((current) => ({
-      ...current,
-      [key]: value,
-    }))
-  }
+  useEffect(() => { loadMember() }, [loadMember])
+  useDidShow(() => { loadMember() })
 
   const handleSave = async () => {
-    if (saving) {
-      return
-    }
-
-    if (!params.workspaceId || !params.memberId) {
-      Taro.showToast({
-        title: '参数错误',
-        icon: 'none',
-      })
-      return
-    }
-
+    if (saving || !workspaceId || !memberId) return
     setSaving(true)
     try {
-      await workspaceApi.updateMember(params.workspaceId, params.memberId, {
-        ...form,
-        remark: form.remark.trim() || null,
-      })
-      Taro.showToast({
-        title: '已保存',
-        icon: 'success',
-      })
-      setTimeout(() => {
-        Taro.navigateBack()
-      }, 500)
-    } catch (error) {
-      showErrorToast(error, '保存失败')
-    } finally {
-      setSaving(false)
-    }
+      await workspaceApi.updateMember(workspaceId, memberId, { ...form, remark: form.remark.trim() || null })
+      Taro.showToast({ title: '已保存', icon: 'success' })
+      setTimeout(() => { Taro.navigateBack() }, 500)
+    } catch (error) { showErrorToast(error, '保存失败') }
+    finally { setSaving(false) }
   }
-
-  if (loading) {
-    return (
-      <View className='page-shell page-shell--sunset px-4 py-5'>
-        <Text className='block text-center text-gray-500'>加载中...</Text>
-      </View>
-    )
-  }
-
-  if (!member) {
-    return (
-      <View className='page-shell page-shell--sunset px-4 py-5'>
-        <Text className='block text-center text-gray-500'>成员不存在</Text>
-      </View>
-    )
-  }
-
-  const displayName = getMemberDisplayName(member)
-  const subtitle = getMemberSubtitle(member)
 
   return (
     <View className='page-shell page-shell--sunset px-4 py-5 pb-32'>
-      <PageHero
-        badge='Member Setting'
-        title={displayName}
-        description={`${workspace?.name || '当前空间'} · 成员 ID ${member.id}`}
-        tone='sunset'
-      />
-
-      <SectionCard
-        title='成员资料'
-        description='空间内备注会覆盖昵称显示，头像来自对方个人中心设置。'
-        variant='accent'
+      <AsyncContainer
+        loading={loading}
+        data={member}
+        skeleton={<View><SkeletonCard /><SkeletonCard /><SkeletonCard /></View>}
+        empty={<EmptyStatePlaceholder />}
       >
-        <View className='feature-list-card feature-list-card--rose'>
-          <View className='flex items-center'>
-            <MemberAvatar className='mr-3' member={member} size='lg' />
+        {(m) => {
+          const displayName = getMemberDisplayName(m)
+          const subtitle = getMemberSubtitle(m)
+          return (
             <View>
-              <Text className='feature-list-card__title'>{displayName}</Text>
-              {subtitle ? (
-                <Text className='mt-1 block text-sm text-slate-500'>{subtitle}</Text>
-              ) : null}
-            </View>
-          </View>
+              <SubPageHeader title='成员设置' description='调整空间内备注、角色、状态和权限。' />
+              <PageHero badge='Member Setting' title={displayName}
+                description={`${workspace?.name || '当前空间'} · 成员 ID ${m.id}`} tone='sunset' />
 
-          <Text className='mt-4 block feature-list-card__meta'>空间内备注</Text>
-          <Input
-            className='mt-2 rounded-2xl bg-white/80 px-4 py-3 text-base text-slate-700'
-            maxlength={50}
-            placeholder='例如：管家、小厨、对象'
-            value={form.remark}
-            onInput={(event) =>
-              setForm((current) => ({
-                ...current,
-                remark: event.detail.value,
-              }))
-            }
-          />
-        </View>
-      </SectionCard>
+              <SectionCard title='成员资料' description='空间内备注会覆盖昵称显示。' variant='accent'>
+                <View className='feature-list-card feature-list-card--rose'>
+                  <View className='flex items-center'>
+                    <MemberAvatar className='mr-3' member={m} size='lg' />
+                    <View>
+                      <Text className='feature-list-card__title'>{displayName}</Text>
+                      {subtitle ? <Text className='mt-1 block text-sm text-slate-500'>{subtitle}</Text> : null}
+                    </View>
+                  </View>
+                  <Text className='mt-4 block feature-list-card__meta'>空间内备注</Text>
+                  <Input className='form-control form-control--on-tint mt-2' maxlength={50} confirmType='done'
+                    placeholder='例如：管家、小厨、对象' value={form.remark}
+                    onConfirm={handleSave} onInput={(e) => setForm((c) => ({ ...c, remark: e.detail.value }))} />
+                </View>
+              </SectionCard>
 
-      <SectionCard
-        title='角色与状态'
-        description='展示角色影响标签与发单体验，状态用于标记是否仍在协作中。'
-        variant='accent'
-      >
-        <View className='form-field'>
-          <Text className='form-label'>展示角色</Text>
-          <Picker
-            mode='selector'
-            range={roleOptions.map((item) => item.label)}
-            value={roleIndexByValue[form.displayRole] || 0}
-            onChange={(event) => {
-              const index = Number(event.detail.value)
-              setForm((current) => ({
-                ...current,
-                displayRole: roleOptions[index]?.value || 'cook',
-              }))
-            }}
-          >
-            <View className='form-picker'>
-              <Text className='form-picker__label'>当前选择</Text>
-              <Text className='form-picker__value'>
-                {roleOptions[roleIndexByValue[form.displayRole] || 0].label}
-              </Text>
-            </View>
-          </Picker>
-        </View>
+              <SectionCard title='角色与状态' description='展示角色影响标签与发单体验。' variant='accent'>
+                <FormField label='展示角色'>
+                  <Picker mode='selector' range={roleOptions.map((o) => o.label)}
+                    value={roleIndexByValue[form.displayRole] || 0}
+                    onChange={(e) => { const idx = Number(e.detail.value); setForm((c) => ({ ...c, displayRole: roleOptions[idx]?.value || 'cook' })) }}>
+                    <View className='form-picker'>
+                      <Text className='form-picker__value'>{roleOptions[roleIndexByValue[form.displayRole] || 0].label}</Text>
+                    </View>
+                  </Picker>
+                </FormField>
+                <FormField label='成员状态'>
+                  <Picker mode='selector' range={statusOptions.map((o) => o.label)}
+                    value={statusIndexByValue[form.status] || 0}
+                    onChange={(e) => { const idx = Number(e.detail.value); setForm((c) => ({ ...c, status: statusOptions[idx]?.value || 'active' })) }}>
+                    <View className='form-picker'>
+                      <Text className='form-picker__value'>{statusOptions[statusIndexByValue[form.status] || 0].label}</Text>
+                    </View>
+                  </Picker>
+                </FormField>
+              </SectionCard>
 
-        <View className='form-field'>
-          <Text className='form-label'>成员状态</Text>
-          <Picker
-            mode='selector'
-            range={statusOptions.map((item) => item.label)}
-            value={statusIndexByValue[form.status] || 0}
-            onChange={(event) => {
-              const index = Number(event.detail.value)
-              setForm((current) => ({
-                ...current,
-                status: statusOptions[index]?.value || 'active',
-              }))
-            }}
-          >
-            <View className='form-picker'>
-              <Text className='form-picker__label'>当前选择</Text>
-              <Text className='form-picker__value'>
-                {statusOptions[statusIndexByValue[form.status] || 0].label}
-              </Text>
+              <SectionCard title='权限开关' description='按最小权限原则配置。' meta={`${permissionItems.length} 项`} variant='soft'>
+                <View>
+                  {permissionItems.map((item) => (
+                    <View key={item.key} className='permission-row'>
+                      <View className='permission-row__text'>
+                        <Text className='permission-row__title'>{item.title}</Text>
+                        <Text className='permission-row__desc'>{item.description}</Text>
+                      </View>
+                      <Switch checked={Boolean(form[item.key])}
+                        onChange={(e) => setForm((c) => ({ ...c, [item.key]: Boolean(e.detail.value) }))} />
+                    </View>
+                  ))}
+                </View>
+              </SectionCard>
             </View>
-          </Picker>
-        </View>
-      </SectionCard>
-
-      <SectionCard
-        title='权限开关'
-        description='按最小权限原则配置，需要时再逐步放开。'
-        meta={`${permissionItems.length} 项`}
-        variant='soft'
-      >
-        <View>
-          {permissionItems.map((item) => (
-            <View key={item.key} className='permission-row'>
-              <View className='permission-row__text'>
-                <Text className='permission-row__title'>{item.title}</Text>
-                <Text className='permission-row__desc'>{item.description}</Text>
-              </View>
-              <Switch
-                checked={Boolean(form[item.key])}
-                onChange={(event) => {
-                  updatePermission(item.key, Boolean(event.detail.value))
-                }}
-              />
-            </View>
-          ))}
-        </View>
-      </SectionCard>
+          )
+        }}
+      </AsyncContainer>
 
       <BottomActionBar>
-        <Button
-          className='app-button app-button--primary'
-          loading={saving}
-          disabled={saving}
-          onClick={handleSave}
-        >
+        <Button className='app-button app-button--primary' loading={saving} disabled={saving} onClick={handleSave}>
           保存成员设置
         </Button>
       </BottomActionBar>
+    </View>
+  )
+}
+
+// 内联占位组件
+function EmptyStatePlaceholder() {
+  return (
+    <View className='page-shell page-shell--sunset px-4 py-5'>
+      <Text className='block text-center text-gray-500'>成员不存在</Text>
     </View>
   )
 }

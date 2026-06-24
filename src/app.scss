@@ -1,8 +1,10 @@
 // ── 全局样式入口 ──
-// 引入设计令牌 + BEM 组件样式 + 动画系统
+// 引入设计令牌 + BEM 组件样式 + 动画系统 + Dashboard 样式
 @use "./styles/ui-tokens.scss";
 @use "./styles/ui-patterns.scss";
 @use "./styles/animations.scss";
+@use "./styles/dashboard.scss";
+@use "./styles/editorial.scss";
 
 // ═══════════════════════════════════════════
 // 基础重置
@@ -105,6 +107,7 @@ body,
 .mb-2-5 { margin-bottom: 10px; }
 .ml-2-5 { margin-left: 10px; }
 .mr-2-5 { margin-right: 10px; }
+.mr-3 { margin-right: 12px; }
 
 // ═══════════════════════════════════════════
 // 尺寸工具类
@@ -257,6 +260,9 @@ body,
 
 .profile-avatar-trigger,
 taro-button-core.profile-avatar-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex: 0 0 80px;
   width: 80px;
   min-width: 80px;
@@ -267,6 +273,7 @@ taro-button-core.profile-avatar-trigger {
   border-radius: 9999px;
   background: transparent;
   box-sizing: border-box;
+  line-height: 1;
 }
 
 .profile-avatar-trigger::after,
@@ -331,13 +338,23 @@ taro-button-core.app-button::after,
   overflow: hidden;
 }
 
+.login-page__content {
+  width: min(100%, 420px);
+  margin: auto;
+}
+
+.page-shell--login .page-hero {
+  margin-bottom: 0;
+}
+
+.page-shell--login .section-card {
+  margin-bottom: 0;
+}
+
 .login-page__version {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 20vh;
-  z-index: 2;
-  padding-top: 8px;
+  width: 100%;
+  margin-top: auto;
+  padding-top: 18px;
   padding-bottom: calc(env(safe-area-inset-bottom) + 8px);
   color: var(--ui-text-tertiary);
   font-size: 11px;

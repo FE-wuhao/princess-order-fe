@@ -6,5 +6,9 @@ interface BottomActionBarProps {
 }
 
 export default function BottomActionBar({ children }: BottomActionBarProps) {
-  return <View className='bottom-action-bar'>{children}</View>
+  return (
+    <View className='bottom-action-bar'>
+      <View className='bottom-action-bar__inner'>{children}</View>
+    </View>
+  )
 }

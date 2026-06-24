@@ -1,0 +1,209 @@
+// QuickCreateSheet 底部弹出面板样式
+
+.qcs-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: flex-end;
+  animation: fadeIn 0.2s ease both;
+}
+
+.qcs-sheet {
+  width: 100%;
+  max-height: 70vh;
+  background: var(--ui-bg-elevated, #ffffff);
+  border-radius: 20px 20px 0 0;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.3s ease both;
+}
+
+.qcs-handle {
+  width: 40px;
+  height: 4px;
+  background: #e0d8dc;
+  border-radius: 2px;
+  margin: 12px auto 8px;
+}
+
+.qcs-header {
+  padding: 0 20px 12px;
+  text-align: center;
+}
+
+.qcs-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ui-text-primary, #2f1f28);
+}
+
+.qcs-subtitle {
+  display: block;
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--ui-text-secondary, #6f5a67);
+}
+
+// 步骤指示器
+.qcs-steps {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 20px 16px;
+  gap: 0;
+}
+
+.qcs-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.qcs-step__dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--ui-neutral-soft, #f3eef1);
+  color: var(--ui-text-tertiary, #a18c98);
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.qcs-step--active .qcs-step__dot {
+  background: var(--ui-brand-500, #c65a72);
+  color: #fff;
+}
+
+.qcs-step--done .qcs-step__dot {
+  background: var(--ui-success-soft, #e4f7ed);
+  color: var(--ui-success-text, #1f8a5b);
+}
+
+.qcs-step__label {
+  font-size: 13px;
+  color: var(--ui-text-tertiary, #a18c98);
+}
+
+.qcs-step--active .qcs-step__label {
+  color: var(--ui-text-primary, #2f1f28);
+  font-weight: 600;
+}
+
+.qcs-step__line {
+  width: 40px;
+  height: 2px;
+  background: var(--ui-neutral-soft, #f3eef1);
+  margin: 0 12px;
+}
+
+// 内容区
+.qcs-body {
+  flex: 1;
+  max-height: 40vh;
+  padding: 0 16px;
+}
+
+.qcs-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  margin-bottom: 8px;
+  border-radius: 14px;
+  border: 1.5px solid transparent;
+  background: var(--ui-bg-muted, #fff2ef);
+  transition: all 0.15s ease;
+}
+
+.qcs-item--selected {
+  border-color: var(--ui-brand-500, #c65a72);
+  background: var(--ui-brand-soft, #fde8ec);
+}
+
+.qcs-item__icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.qcs-item__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.qcs-item__title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ui-text-primary, #2f1f28);
+  display: block;
+}
+
+.qcs-item__desc {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--ui-text-tertiary, #a18c98);
+}
+
+.qcs-item__arrow {
+  font-size: 16px;
+  color: var(--ui-text-tertiary, #a18c98);
+  flex-shrink: 0;
+}
+
+.qcs-check {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--ui-brand-500, #c65a72);
+  color: #fff;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.qcs-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px 20px;
+  gap: 8px;
+}
+
+.qcs-empty__icon {
+  font-size: 40px;
+}
+
+.qcs-empty__text {
+  font-size: 14px;
+  color: var(--ui-text-secondary, #6f5a67);
+}
+
+// 底部
+.qcs-footer {
+  padding: 12px 16px calc(env(safe-area-inset-bottom) + 12px);
+  border-top: 1px solid var(--ui-neutral-soft, #f3eef1);
+}
+
+.qcs-footer__row {
+  display: flex;
+  gap: 12px;
+
+  > * {
+    flex: 1;
+  }
+}

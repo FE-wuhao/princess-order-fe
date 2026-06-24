@@ -184,20 +184,20 @@ export default function TaskList() {
 
                       return (
                         <Pressable key={task.id} onClick={() => handleTaskClick(task.id)}>
-                          <View className={`feature-list-card ${taskCardToneClassMap[task.status] || ''}`}>
-                            <View className='mb-2 flex items-center justify-between'>
-                              <Text className='feature-list-card__title'>
-                                {task.recipe?.name || `任务 #${task.id}`}
+                          <View className={`task-card task-card--${statusMeta.tone}`}>
+                            <View className='task-card__bar' />
+                            <View className='task-card__body'>
+                              <View className='task-card__header'>
+                                <Text className='task-card__title'>
+                                  {task.recipe?.name || `任务 #${task.id}`}
+                                </Text>
+                                <StatusChip label={statusMeta.label} tone={statusMeta.tone} />
+                              </View>
+                              <Text className='task-card__meta'>
+                                {task.creator?.nickname || '未知'} → {task.assignee?.nickname || '待指派'}
+                                {workspaceName ? ` · ${workspaceName}` : ''}
                               </Text>
-                              <StatusChip label={statusMeta.label} tone={statusMeta.tone} />
                             </View>
-                            <Text className='feature-list-card__description'>
-                              空间：{workspaceName}
-                            </Text>
-                            <Text className='feature-list-card__meta'>
-                              发起人：{task.creator?.nickname || '未命名'} / 执行人：
-                              {task.assignee?.nickname || '未命名'}
-                            </Text>
                           </View>
                         </Pressable>
                       )

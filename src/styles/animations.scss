@@ -119,20 +119,17 @@
 
   // H5 按钮悬浮效果
   .app-button:not(:disabled):not([disabled]):hover {
-    transform: translateY(-1px);
-    box-shadow: var(--ui-shadow-floating, 0 10px 24px rgba(116, 73, 95, 0.14));
+    filter: brightness(0.98);
   }
 
   .app-button:not(:disabled):not([disabled]):active {
-    transform: scale(0.96);
-    transition: transform 0.08s ease;
+    opacity: 0.82;
   }
 
   // H5 卡片悬浮效果
   .feature-list-card:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--ui-shadow-floating, 0 10px 24px rgba(116, 73, 95, 0.14));
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border-color: rgba(169, 47, 76, 0.24);
+    transition: border-color 0.2s ease, background-color 0.2s ease;
   }
 
   // H5 输入框聚焦增强

@@ -1,13 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Button, Text, View } from '@tarojs/components'
 import Taro, { useDidShow } from '@tarojs/taro'
-import AsyncContainer from '@/components/async-container'
 import EmptyState from '@/components/empty-state'
 import InputDialog from '@/components/input-dialog'
-import PageHero from '@/components/page-hero'
 import Pressable from '@/components/pressable'
+import TabBarPlus from '@/components/tab-bar-plus'
 import SectionCard from '@/components/section-card'
-import { SkeletonCard, SkeletonHero } from '@/components/skeleton'
+import { SkeletonCard } from '@/components/skeleton'
 import StatusChip from '@/components/status-chip'
 import WorkspaceSwitcher from '@/components/workspace-switcher'
 import { orderStatusMetaMap } from '@/constants/ui'
@@ -31,25 +30,32 @@ const taskCardToneClassMap: Record<TaskStatus, string> = {
   expired: 'feature-list-card--danger',
 }
 
+const STATUS_BADGES = [
+  { key: 'created' as TaskStatus, label: '待响应', short: '01' },
+  { key: 'accepted' as TaskStatus, label: '已接单', short: '02' },
+  { key: 'cooking' as TaskStatus, label: '制作中', short: '03' },
+  { key: 'completed' as TaskStatus, label: '待确认', short: '04' },
+]
+
+const isH5 = process.env.TARO_ENV === 'h5'
+
 export default function Index() {
-  // ── Zustand stores ──
+  // ── Stores ──
   const isLoggedIn = useAuthStore((s) => !!s.token)
   const ensureAuth = useAuthStore((s) => s.wxLogin)
-
   const workspaces = useWorkspaceStore((s) => s.workspaces)
   const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId)
   const loading = useWorkspaceStore((s) => s.loading)
   const loadWorkspaces = useWorkspaceStore((s) => s.loadWorkspaces)
   const switchWorkspace = useWorkspaceStore((s) => s.switchWorkspace)
   const activeWorkspace = useWorkspaceStore((s) => s.activeWorkspace)
-  // 任务数据 — 独立 Store
   const tasks = useTaskStore((s) => s.tasks)
   const tasksLoading = useTaskStore((s) => s.tasksMeta.loading)
-  // 通知 — 独立 Store
+  const refreshTasks = useTaskStore((s) => s.refreshTasks)
   const unreadCount = useNotificationStore((s) => s.unreadCount)
   const loadNotifications = useNotificationStore((s) => s.loadNotifications)
 
-  // ── Local UI state ──
+  // ── Local UI ──
   const [dialogMode, setDialogMode] = useState<HomeDialogMode>(null)
   const [dialogValue, setDialogValue] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -64,44 +70,39 @@ export default function Index() {
 
   const recentTasks = useMemo(() => tasks.slice(0, 4), [tasks])
 
-  const pendingTasks = useMemo(
-    () =>
-      tasks.filter((t) =>
-        (['created', 'accepted', 'cooking', 'completed'] as TaskStatus[]).includes(
-          t.status as TaskStatus,
-        ),
-      ),
+  // 各状态任务计数
+  const statusCounts = useMemo(() => {
+    const counts: Record<string, number> = {}
+    STATUS_BADGES.forEach((b) => {
+      counts[b.key] = tasks.filter((t) => t.status === b.key).length
+    })
+    return counts
+  }, [tasks])
+
+  const pendingTotal = useMemo(
+    () => tasks.filter((t) => (['created', 'accepted', 'cooking', 'completed'] as TaskStatus[]).includes(t.status as TaskStatus)).length,
     [tasks],
   )
 
-  // ── 加载逻辑 ──
+  // ── 加载 ──
   const loadDashboard = useCallback(async () => {
     lastLoadTimeRef.current = Date.now()
     try {
       await loadWorkspaces()
-      // 后台加载通知计数
       loadNotifications()
+      const wsId = useWorkspaceStore.getState().activeWorkspaceId
+      if (wsId) await refreshTasks({ mine: true })
     } catch (error) {
       showErrorToast(error, '首页加载失败')
     }
-  }, [loadWorkspaces, loadNotifications])
+  }, [loadWorkspaces, loadNotifications, refreshTasks])
 
   const ensureLoginAndLoad = useCallback(async () => {
-    if (isLoggedIn) {
-      loadDashboard()
-      return
-    }
-    try {
-      await ensureAuth()
-      loadDashboard()
-    } catch {
-      // ensureAuth 内部已处理跳转
-    }
+    if (isLoggedIn) { loadDashboard(); return }
+    try { await ensureAuth(); loadDashboard() } catch { /* handled */ }
   }, [ensureAuth, isLoggedIn, loadDashboard])
 
-  useEffect(() => {
-    ensureLoginAndLoad()
-  }, [ensureLoginAndLoad])
+  useEffect(() => { ensureLoginAndLoad() }, [ensureLoginAndLoad])
 
   useDidShow(() => {
     if (isLoggedIn && Date.now() - lastLoadTimeRef.current > 3000) {
@@ -110,250 +111,191 @@ export default function Index() {
   })
 
   // ── 交互 ──
-  const handleSelectWorkspace = async (workspaceId: number) => {
-    try {
-      await switchWorkspace(workspaceId)
-    } catch (error) {
-      showErrorToast(error, '切换空间失败')
-    }
-  }
-
-  const handleCreateTask = () => {
-    if (!currentWorkspace?.id) return
-    Taro.navigateTo({ url: `/pages/order/index?workspaceId=${currentWorkspace.id}` })
-  }
-
-  const handleRecipeHubClick = () => {
-    Taro.switchTab({ url: '/pages/recipes/index' })
-  }
-
-  const handleTaskBoardClick = () => {
-    Taro.switchTab({ url: '/pages/task-list/index' })
-  }
-
-  const handleNotificationClick = () => {
-    Taro.navigateTo({ url: '/pages/notifications/index' })
+  const handleSelectWorkspace = async (id: number) => {
+    try { await switchWorkspace(id) } catch (e) { showErrorToast(e, '切换空间失败') }
   }
 
   const handleTaskClick = (task: { id: number }) => {
     Taro.navigateTo({ url: `/pages/task/index?id=${task.id}` })
   }
 
-  const handleWorkspaceManage = (workspace: { id: number }) => {
-    Taro.navigateTo({ url: `/pages/group/index?workspaceId=${workspace.id}` })
+  const handleStatusFilter = (statusKey: TaskStatus) => {
+    Taro.navigateTo({ url: `/pages/task-list/index?filter=${statusKey}` })
+  }
+
+  const handleViewAllTasks = () => {
+    Taro.navigateTo({ url: '/pages/task-list/index' })
   }
 
   const handleCreateWorkspace = async () => {
     const name = dialogValue.trim()
-    if (!name) {
-      Taro.showToast({ title: '请输入空间名', icon: 'none' })
-      return
-    }
+    if (!name) { Taro.showToast({ title: '请输入空间名', icon: 'none' }); return }
     setSubmitting(true)
     try {
       const { workspaceApi } = await import('@/services/workspace.api')
       await workspaceApi.create(name)
-      setDialogValue('')
-      setDialogMode(null)
+      setDialogValue(''); setDialogMode(null)
       Taro.showToast({ title: '创建成功', icon: 'success' })
       await loadDashboard()
-    } catch (error) {
-      showErrorToast(error, '创建空间失败')
-    } finally {
-      setSubmitting(false)
-    }
+    } catch (e) { showErrorToast(e, '创建空间失败') }
+    finally { setSubmitting(false) }
   }
 
   const handleJoinWorkspace = async () => {
-    const inviteCode = dialogValue.trim().toUpperCase()
-    if (!inviteCode) {
-      Taro.showToast({ title: '请输入邀请码', icon: 'none' })
-      return
-    }
+    const code = dialogValue.trim().toUpperCase()
+    if (!code) { Taro.showToast({ title: '请输入邀请码', icon: 'none' }); return }
     setSubmitting(true)
     try {
       const { workspaceApi } = await import('@/services/workspace.api')
-      const membership = await workspaceApi.joinByInvite(inviteCode)
-      const workspaceId = (membership as { workspace?: { id: number } })?.workspace?.id || 0
-      if (workspaceId) {
-        setDialogValue('')
-        setDialogMode(null)
-        Taro.showToast({ title: '加入成功', icon: 'success' })
-        await loadDashboard()
-      }
-    } catch (error) {
-      showErrorToast(error, '加入空间失败')
-    } finally {
-      setSubmitting(false)
-    }
+      const m = await workspaceApi.joinByInvite(code)
+      const wsId = (m as { workspace?: { id: number } })?.workspace?.id || 0
+      if (wsId) { setDialogValue(''); setDialogMode(null); Taro.showToast({ title: '加入成功', icon: 'success' }); await loadDashboard() }
+    } catch (e) { showErrorToast(e, '加入空间失败') }
+    finally { setSubmitting(false) }
   }
 
   // ── Render ──
+  const isLoading = loading || (tasksLoading && tasks.length === 0)
+
   return (
-    <View className='page-shell px-4 py-5'>
-      <View className='toolbar-row'>
+    <View className='page-shell page-shell--dashboard'>
+      {/* 顶部栏：空间切换 + 通知 */}
+      <View className='toolbar-row dashboard-toolbar'>
         <View className='toolbar-row__main'>
           <WorkspaceSwitcher
             workspaces={workspacesForSwitcher}
             selectedWorkspaceId={activeWorkspaceId}
             onSelect={handleSelectWorkspace}
-            onEdit={handleWorkspaceManage}
+            onEdit={(ws) => Taro.navigateTo({ url: `/pages/group/index?workspaceId=${ws.id}` })}
             onCreate={() => { setDialogValue(''); setDialogMode('create') }}
             onJoin={() => { setDialogValue(''); setDialogMode('join') }}
           />
         </View>
-        <Pressable onClick={handleNotificationClick}>
+        <Pressable onClick={() => Taro.navigateTo({ url: '/pages/notifications/index' })}>
           <View className='toolbar-icon-button' style={{ position: 'relative' }}>
             <View className='icon-bell' />
             {unreadCount > 0 ? (
-              <View
-                style={{
-                  position: 'absolute',
-                  top: '-2px',
-                  right: '-2px',
-                  minWidth: '18px',
-                  height: '18px',
-                  borderRadius: '9px',
-                  background: 'var(--ui-danger-text, #c2415d)',
-                  color: '#fff',
-                  fontSize: '11px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: '0 5px',
-                }}
-              >
-                {unreadCount > 99 ? '99+' : unreadCount}
-              </View>
+              <View className='dashboard-badge'>{unreadCount > 99 ? '99+' : unreadCount}</View>
             ) : null}
           </View>
         </Pressable>
       </View>
 
-      <PageHero
-        badge='Princess Order'
-        title='今天吃什么，先从当前空间开始'
-        description='首页只负责总览与分流：当前空间定好以后，菜谱和任务都会跟着这个上下文走。'
-        stats={
-          <AsyncContainer
-            loading={tasksLoading && tasks.length === 0}
-            data={pendingTasks}
-            isEmpty={(d) => d == null || d.length === 0}
-            empty={
-              <View className='hero-stat-grid'>
-                <View className='hero-stat-card'>
-                  <Text className='hero-stat-card__label'>待跟进任务</Text>
-                  <Text className='hero-stat-card__value'>0</Text>
-                  <Text className='hero-stat-card__hint'>暂无待处理任务</Text>
-                </View>
-                <View className='hero-stat-card'>
-                  <Text className='hero-stat-card__label'>当前空间</Text>
-                  <Text className='hero-stat-card__value'>{currentWorkspace?.name || '未选择'}</Text>
-                  <Text className='hero-stat-card__hint'>下次进入时会自动记住</Text>
-                </View>
-              </View>
-            }
-            skeleton={<SkeletonHero />}
-            emptyTitle=''
-            emptyDescription=''
-          >
-            {() => (
-              <View className='hero-stat-grid'>
-                <View className='hero-stat-card'>
-                  <Text className='hero-stat-card__label'>待跟进任务</Text>
-                  <Text className='hero-stat-card__value'>{pendingTasks.length}</Text>
-                  <Text className='hero-stat-card__hint'>优先处理待响应、制作中和待确认</Text>
-                </View>
-                <View className='hero-stat-card'>
-                  <Text className='hero-stat-card__label'>当前空间</Text>
-                  <Text className='hero-stat-card__value'>{currentWorkspace?.name || '未选择'}</Text>
-                  <Text className='hero-stat-card__hint'>下次进入时会自动记住</Text>
-                </View>
-              </View>
-            )}
-          </AsyncContainer>
-        }
-        actions={
-          <View className='space-y-3'>
-            <Button className='app-button app-button--primary' onClick={handleRecipeHubClick}>
-              进入菜谱库
-            </Button>
-            <Button className='app-button app-button--ghost' onClick={handleTaskBoardClick}>
-              查看任务看板
-            </Button>
-            <Button className='app-button app-button--secondary' disabled={!currentWorkspace?.id} onClick={handleCreateTask}>
-              直接发起任务
-            </Button>
-          </View>
-        }
-      />
+      <View className='dashboard-masthead'>
+        <Text className='dashboard-masthead__kicker'>PRINCESS ORDER · TODAY</Text>
+        <Text className='dashboard-masthead__title'>今天想吃什么？</Text>
+        <Text className='dashboard-masthead__copy'>
+          {currentWorkspace
+            ? `${currentWorkspace.name} · ${pendingTotal > 0 ? `${pendingTotal} 件事正在厨房里发生` : '厨房清闲，适合点一道喜欢的菜'}`
+            : '创建一个共同厨房，把想吃的认真交给重要的人。'}
+        </Text>
+        <View className='dashboard-masthead__rule'>
+          <View className='dashboard-masthead__rule-line' />
+          <Text className='dashboard-masthead__rule-mark'>PO</Text>
+          <View className='dashboard-masthead__rule-line' />
+        </View>
+      </View>
 
+      <View className='dashboard-section-heading'>
+        <Text className='dashboard-section-heading__index'>01</Text>
+        <View>
+          <Text className='dashboard-section-heading__title'>今日进度</Text>
+          <Text className='dashboard-section-heading__caption'>从发起到上桌，一眼看清</Text>
+        </View>
+      </View>
+      <View className='dashboard-stat-grid'>
+        {STATUS_BADGES.map((badge) => (
+          <Pressable key={badge.key} onClick={() => handleStatusFilter(badge.key)}>
+            <View className={`dashboard-stat-card dashboard-stat-card--${badge.key}`}>
+              <Text className='dashboard-stat-card__step'>{badge.short}</Text>
+              <Text className='dashboard-stat-card__count'>{statusCounts[badge.key] || 0}</Text>
+              <Text className='dashboard-stat-card__label'>{badge.label}</Text>
+            </View>
+          </Pressable>
+        ))}
+      </View>
+
+      <View className='dashboard-actions'>
+        <Button className='dashboard-action dashboard-action--primary' onClick={() => Taro.switchTab({ url: '/pages/recipes/index' })}>
+          <Text className='dashboard-action__eyebrow'>MENU</Text>
+          <Text className='dashboard-action__title'>翻翻家里的菜谱</Text>
+          <Text className='dashboard-action__arrow'>→</Text>
+        </Button>
+        <Button className='dashboard-action' onClick={handleViewAllTasks}>
+          <Text className='dashboard-action__eyebrow'>ORDERS</Text>
+          <Text className='dashboard-action__title'>看看全部任务</Text>
+          <Text className='dashboard-action__arrow'>→</Text>
+        </Button>
+      </View>
+
+      <View className='dashboard-section-heading dashboard-section-heading--activity'>
+        <Text className='dashboard-section-heading__index'>02</Text>
+        <View>
+          <Text className='dashboard-section-heading__title'>最近动态</Text>
+          <Text className='dashboard-section-heading__caption'>共同厨房的最新小事</Text>
+        </View>
+      </View>
       <SectionCard
-        title='最近任务'
-        description='不同状态直接用不同底色区分，空状态也会按分区语义保持一致。'
+        title={recentTasks.length > 0 ? `最近 ${recentTasks.length} 条任务` : '还没有任务'}
         actions={
-          <Button className='app-button app-button--ghost app-button--mini' onClick={handleTaskBoardClick}>
-            查看全部
-          </Button>
+          recentTasks.length > 0 ? (
+            <Button className='app-button app-button--ghost app-button--mini' onClick={handleViewAllTasks}>
+              查看全部
+            </Button>
+          ) : undefined
         }
         variant='soft'
       >
-        <AsyncContainer
-          loading={loading}
-          data={recentTasks}
-          skeleton={<View><SkeletonCard /><SkeletonCard /><SkeletonCard /></View>}
-          empty={<EmptyState tone='gray' title='还没有任务' description='从当前空间发起第一笔任务后，这里会展示最近进度。' />}
-        >
-          {(taskList) => (
-            <View>
-              {taskList.map((task) => {
-                const statusMeta = orderStatusMetaMap[task.status as TaskStatus]
-                return (
-                  <Pressable key={task.id} onClick={() => handleTaskClick(task)}>
-                    <View className={`feature-list-card ${taskCardToneClassMap[task.status as TaskStatus]}`}>
-                      <View className='mb-2 flex items-center justify-between'>
-                        <Text className='feature-list-card__title'>
+        {isLoading ? (
+          <View><SkeletonCard /><SkeletonCard /><SkeletonCard /></View>
+        ) : recentTasks.length === 0 ? (
+          <EmptyState tone='gray' title='还没有任务'
+            description='点击底部点单按钮，选一道菜和执行人，发起第一个任务。' />
+        ) : (
+          <View>
+            {recentTasks.map((task) => {
+              const statusMeta = orderStatusMetaMap[task.status as TaskStatus]
+              const wsName = (task as { workspace?: { name?: string } }).workspace?.name || ''
+              return (
+                <Pressable key={task.id} onClick={() => handleTaskClick(task)}>
+                  <View className={`task-card task-card--${statusMeta.tone}`}>
+                    <View className='task-card__bar' />
+                    <View className='task-card__body'>
+                      <View className='task-card__header'>
+                        <Text className='task-card__title'>
                           {task.recipe?.name || `任务 #${task.id}`}
                         </Text>
                         <StatusChip label={statusMeta.label} tone={statusMeta.tone} />
                       </View>
-                      <Text className='feature-list-card__description'>
-                        空间：{(task as { workspace?: { name?: string } }).workspace?.name || '未命名空间'}
-                      </Text>
-                      <Text className='feature-list-card__meta'>
-                        发起人：{task.creator?.nickname || '未命名'} / 执行人：{task.assignee?.nickname || '未命名'}
+                      <Text className='task-card__meta'>
+                        {task.creator?.nickname || '未知'} → {task.assignee?.nickname || '待指派'}
+                        {wsName ? ` · ${wsName}` : ''}
                       </Text>
                     </View>
-                  </Pressable>
-                )
-              })}
-            </View>
-          )}
-        </AsyncContainer>
+                  </View>
+                </Pressable>
+              )
+            })}
+          </View>
+        )}
       </SectionCard>
 
+      {/* 弹窗 */}
       <InputDialog
-        visible={dialogMode === 'create'}
-        title='新建空间'
-        value={dialogValue}
-        placeholder='例如：我们家厨房'
-        confirmText='创建'
-        loading={submitting}
+        visible={dialogMode === 'create'} title='新建空间' value={dialogValue}
+        placeholder='例如：我们家厨房' confirmText='创建' loading={submitting}
         onChange={setDialogValue}
         onCancel={() => { setDialogMode(null); setDialogValue('') }}
         onConfirm={handleCreateWorkspace}
       />
       <InputDialog
-        visible={dialogMode === 'join'}
-        title='输入邀请码'
-        value={dialogValue}
-        placeholder='例如：GRBQ7X'
-        confirmText='加入'
-        loading={submitting}
-        onChange={(value: string) => setDialogValue(value.toUpperCase())}
+        visible={dialogMode === 'join'} title='输入邀请码' value={dialogValue}
+        placeholder='例如：GRBQ7X' confirmText='加入' loading={submitting}
+        onChange={(v: string) => setDialogValue(v.toUpperCase())}
         onCancel={() => { setDialogMode(null); setDialogValue('') }}
         onConfirm={handleJoinWorkspace}
       />
+      {isH5 ? <TabBarPlus activeKey='index' /> : null}
     </View>
   )
 }

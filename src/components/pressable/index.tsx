@@ -8,7 +8,7 @@ import './index.module.scss'
 interface PressableProps {
   /** 子元素 */
   children: ReactNode
-  /** 按压时的缩放比例，默认 0.96 */
+  /** @deprecated 保留兼容，不再缩放布局 */
   scale?: number
   /** 按压时的透明度，H5 保留默认（由 CSS 处理）*/
   opacity?: number
@@ -22,7 +22,6 @@ interface PressableProps {
 
 export default function Pressable({
   children,
-  scale = 0.96,
   className = '',
   onClick,
   disabled = false,
@@ -37,22 +36,18 @@ export default function Pressable({
   const handleTouchEnd = useCallback(() => {
     if (disabled) return
     setPressed(false)
-    onClick?.()
-  }, [disabled, onClick])
+  }, [disabled])
 
   const pressedClass = pressed && !disabled ? 'pressable--pressed' : ''
 
   return (
     <View
       className={`pressable ${pressedClass} ${className}`}
-      style={{
-        transform: pressed && !disabled ? `scale(${scale})` : 'scale(1)',
-        transition: 'transform 0.12s ease, opacity 0.12s ease',
-      }}
+      style={{ transition: 'opacity 0.12s ease, background-color 0.12s ease' }}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
       onTouchCancel={() => setPressed(false)}
-      onClick={onClick}
+      onClick={disabled ? undefined : onClick}
     >
       {children}
     </View>

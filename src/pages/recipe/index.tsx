@@ -6,6 +6,7 @@ import BottomActionBar from '@/components/bottom-action-bar'
 import EmptyState from '@/components/empty-state'
 import PageHero from '@/components/page-hero'
 import Pressable from '@/components/pressable'
+import QuickCreateSheet from '@/components/quick-create-sheet'
 import SectionCard from '@/components/section-card'
 import { SkeletonCard } from '@/components/skeleton'
 import StatusChip from '@/components/status-chip'
@@ -18,6 +19,7 @@ import type { Recipe, RecipeIngredient, RecipeMethod } from '@shared/types'
 export default function RecipePage() {
   const [recipe, setRecipe] = useState<Recipe | null>(null)
   const [loading, setLoading] = useState(false)
+  const [quickCreateVisible, setQuickCreateVisible] = useState(false)
 
   const router = useRouter()
   const recipeId = getRouteNumberParam(router.params, 'id')
@@ -139,10 +141,28 @@ export default function RecipePage() {
       </AsyncContainer>
 
       <BottomActionBar>
-        <Button className='app-button app-button--secondary' onClick={() => Taro.navigateBack()}>
-          返回
-        </Button>
+        <View className='action-row'>
+          <Button className='action-row__item app-button app-button--ghost' onClick={() => Taro.navigateBack()}>
+            返回
+          </Button>
+          <Button
+            className='action-row__item app-button app-button--primary'
+            onClick={() => setQuickCreateVisible(true)}
+          >
+            发起任务
+          </Button>
+        </View>
       </BottomActionBar>
+
+      <QuickCreateSheet
+        visible={quickCreateVisible}
+        workspaceId={workspaceId}
+        preSelectedRecipeId={recipeId}
+        onClose={() => setQuickCreateVisible(false)}
+        onCreated={(taskId) => {
+          if (taskId) Taro.redirectTo({ url: `/pages/task/index?id=${taskId}` })
+        }}
+      />
     </View>
   )
 }

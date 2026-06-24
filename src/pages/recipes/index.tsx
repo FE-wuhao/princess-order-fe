@@ -5,6 +5,7 @@ import AsyncContainer from '@/components/async-container'
 import EmptyState from '@/components/empty-state'
 import PageHero from '@/components/page-hero'
 import Pressable from '@/components/pressable'
+import TabBarPlus from '@/components/tab-bar-plus'
 import SectionCard from '@/components/section-card'
 import { SkeletonCard } from '@/components/skeleton'
 import { useRecipeStore } from '@/stores/useRecipeStore'
@@ -19,6 +20,8 @@ const getDifficultyLabel = (difficulty?: string | null) => {
   if (difficulty === 'normal') return '适中'
   return '未设置'
 }
+
+const isH5 = process.env.TARO_ENV === 'h5'
 
 export default function RecipesPage() {
   const workspaces = useWorkspaceStore((s) => s.workspaces)
@@ -89,21 +92,21 @@ export default function RecipesPage() {
   return (
     <View className='page-shell page-shell--sunset px-4 py-5 pb-8'>
       <PageHero
-        badge='Recipe Library'
-        title='当前空间的家庭菜谱库'
-        description='空间切换统一回到首页顶部完成；菜谱页只负责展示和维护当前空间的知识库。'
+        badge='OUR MENU'
+        title='家里的常备菜单'
+        description='把做过、喜欢、还想再吃的菜留在这里。每一份菜谱，都是下次点单少纠结一点。'
         tone='sunset'
         stats={
           <View className='hero-stat-grid'>
             <View className='hero-stat-card'>
               <Text className='hero-stat-card__label'>当前空间</Text>
               <Text className='hero-stat-card__value'>{activeWorkspace?.name || '未选择'}</Text>
-              <Text className='hero-stat-card__hint'>首页会记住你上次选择的空间</Text>
+              <Text className='hero-stat-card__hint'>正在为这个共同厨房整理</Text>
             </View>
             <View className='hero-stat-card'>
               <Text className='hero-stat-card__label'>可用菜谱</Text>
               <Text className='hero-stat-card__value'>{activeRecipes.length}</Text>
-              <Text className='hero-stat-card__hint'>从这里创建和维护常做菜</Text>
+              <Text className='hero-stat-card__hint'>可以直接用来发起点单</Text>
             </View>
           </View>
         }
@@ -154,6 +157,8 @@ export default function RecipesPage() {
           )}
         </AsyncContainer>
       </SectionCard>
+
+      {isH5 ? <TabBarPlus activeKey='recipes' /> : null}
     </View>
   )
 }

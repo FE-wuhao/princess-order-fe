@@ -1,0 +1,41 @@
+/* Shared editorial layer: visual hierarchy and alignment across H5/weapp. */
+page, body, #app { background: var(--ui-bg-page); color: var(--ui-text-primary); font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif; }
+.page-shell { position: relative; width: min(100%, 480px); min-height: 100vh; margin: 0 auto; box-sizing: border-box; background: radial-gradient(circle at 10% 5%, rgba(169, 47, 76, .055), transparent 24%), linear-gradient(rgba(50, 31, 37, .025) 1px, transparent 1px); background-size: auto, 100% 28px; }
+.toolbar-row { margin-bottom: 0; }
+.toolbar-row__main { min-width: 0; }
+.toolbar-row > .pressable { width: 44px; flex: 0 0 44px; }
+.workspace-switcher__trigger, taro-button-core.workspace-switcher__trigger { min-height: 48px; padding: 7px 44px 7px 12px; border: 0; border-radius: 9px; background: transparent; box-shadow: none; }
+.workspace-switcher__label { color: var(--ui-brand-500); font-size: 9px; font-weight: 700; letter-spacing: 1.5px; }
+.workspace-switcher__value { margin-top: 2px; font-size: 16px; line-height: 21px; font-weight: 700; }
+.workspace-switcher__chevron { top: 17px; right: 13px; width: 15px; height: 15px; }
+.workspace-switcher__menu { border-color: rgba(50, 31, 37, .13); border-radius: 12px; background: #fffdf8; }
+.toolbar-icon-button, taro-button-core.toolbar-icon-button { display: flex; align-items: center; justify-content: center; width: 44px; min-width: 44px; height: 44px; min-height: 44px; padding: 0; border-color: rgba(50, 31, 37, .12); border-radius: 12px; background: #fffdf8; box-shadow: none; line-height: 1; box-sizing: border-box; }
+.section-card { margin-top: 0; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.section-card + .section-card { margin-top: 26px; }
+.section-card__header { margin-bottom: 12px; }
+.section-card__title { font-family: "Songti SC", STSong, serif; font-size: 18px; line-height: 26px; }
+.section-card__description { margin-top: 3px; font-size: 11px; line-height: 17px; }
+.section-card__meta { color: var(--ui-brand-500); font-size: 10px; font-weight: 700; }
+.page-hero { overflow: hidden; padding: 28px 22px; border: 1px solid rgba(50, 31, 37, .12); border-radius: 12px; background: #fffdf8; box-shadow: none; }
+.page-hero__badge { color: var(--ui-brand-500); font-size: 9px; font-weight: 700; letter-spacing: 1.8px; text-transform: uppercase; }
+.page-hero__title { margin-top: 10px; color: var(--ui-text-primary); font-family: "Songti SC", STSong, serif; font-size: 28px; line-height: 38px; }
+.page-hero__description { max-width: 360px; margin-top: 9px; color: var(--ui-text-secondary); font-size: 12px; line-height: 20px; }
+.hero-stat-grid { gap: 1px; overflow: hidden; border: 1px solid rgba(50, 31, 37, .1); border-radius: 9px; background: rgba(50, 31, 37, .1); }
+.hero-stat-card { border: 0; border-radius: 0; background: #fbf7ef; box-shadow: none; }
+.feature-list-card { width: 100%; padding: 14px 15px; border-color: rgba(50, 31, 37, .11); border-radius: 10px; background: #fffdf8; box-shadow: none; box-sizing: border-box; }
+.feature-list-card--rose, .feature-list-card--amber, .feature-list-card--sky, .feature-list-card--warning, .feature-list-card--info, .feature-list-card--success, .feature-list-card--danger, .feature-list-card--neutral, .feature-list-card--accent { background: #fffdf8; }
+.feature-list-card--rose { border-color: var(--ui-brand-500); box-shadow: inset 3px 0 0 var(--ui-brand-500); }
+.feature-list-card--amber { border-color: #bd7a36; box-shadow: inset 3px 0 0 #bd7a36; }
+.feature-list-card__title { font-size: 14px; }
+.tool-pill { border-color: rgba(50, 31, 37, .1); background: var(--ui-bg-soft); }
+.member-avatar { display: flex; flex: 0 0 auto; align-items: center; justify-content: center; overflow: hidden; border: 2px solid #fffdf8; border-radius: 50%; box-sizing: border-box; }
+.member-avatar--image { object-fit: cover; }
+.member-avatar--fallback { background: var(--ui-brand-soft); color: var(--ui-brand-600); font-weight: 700; }
+.member-avatar--sm { width: 36px; height: 36px; font-size: 12px; }
+.member-avatar--md { width: 44px; height: 44px; font-size: 14px; }
+.member-avatar--lg { width: 76px; height: 76px; font-size: 24px; }
+.app-button, taro-button-core.app-button { border-radius: 9px; font-weight: 700; }
+.app-button--primary, taro-button-core.app-button--primary { background: var(--ui-brand-600); box-shadow: none; }
+.app-button--ghost, taro-button-core.app-button--ghost { border-color: rgba(50, 31, 37, .13); background: #fffdf8; color: var(--ui-text-primary); }
+.bottom-action-bar { border-top-color: rgba(50, 31, 37, .12); background: rgba(247, 240, 228, .95); box-shadow: 0 -8px 26px rgba(67, 42, 37, .08); }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }

@@ -3,7 +3,8 @@
 // 小程序端由 JS Touch 事件处理
 
 .pressable {
-  display: inline-block;
+  display: block;
+  width: 100%;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
@@ -22,5 +23,5 @@
 }
 
 .pressable--pressed {
-  opacity: 0.85;
+  opacity: 0.82;
 }

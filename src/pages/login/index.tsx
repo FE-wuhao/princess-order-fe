@@ -60,12 +60,14 @@ export default function LoginPage() {
       className='page-shell page-shell--sky page-shell--login px-4 py-5 animate-fade-in-down'
       style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}
     >
-      <PageHero
-        title='公主请点餐吧'
-        subtitle={mode === 'login' ? '账号登录' : '注册新账号'}
-      />
+      <View className='login-page__content'>
+        <PageHero
+          badge='Welcome'
+          title='公主请点餐吧'
+          description={mode === 'login' ? '用熟悉的账号重新回到你的小厨房。' : '先创建一个账号，再去建立属于你们的家庭空间。'}
+          tone='sky'
+        />
 
-      <View className='mt-4'>
         <SectionCard title={mode === 'login' ? '登录' : '注册'} variant='accent'>
           <FormField label='用户名' error={errors.username}>
             <Input

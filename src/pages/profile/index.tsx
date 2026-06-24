@@ -5,11 +5,14 @@ import MemberAvatar from '@/components/member-avatar'
 import Pressable from '@/components/pressable'
 import SectionCard from '@/components/section-card'
 import { SkeletonCard } from '@/components/skeleton'
+import TabBarPlus from '@/components/tab-bar-plus'
 import { userApi, workspaceApi } from '@/services/api'
 import { useNotificationStore } from '@/stores/useNotificationStore'
 import { ensureAuth, logout, redirectToWorkspaceEntry } from '@/utils/auth'
 import { showErrorToast } from '@/utils/error'
 import type { User } from '@shared/types'
+
+const isH5 = process.env.TARO_ENV === 'h5'
 
 export default function Profile() {
   const [user, setUser] = useState<User | null>(null)
@@ -124,6 +127,7 @@ export default function Profile() {
           退出登录
         </Button>
       </View>
+      {isH5 ? <TabBarPlus activeKey='profile' /> : null}
     </View>
   )
 }

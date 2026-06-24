@@ -12,9 +12,9 @@ interface MemberAvatarProps {
 }
 
 const sizeClassMap = {
-  sm: 'h-9 w-9 text-xs',
-  md: 'h-11 w-11 text-sm',
-  lg: 'h-20 w-20 text-2xl',
+  sm: 'member-avatar--sm',
+  md: 'member-avatar--md',
+  lg: 'member-avatar--lg',
 }
 
 export default function MemberAvatar({
@@ -28,7 +28,7 @@ export default function MemberAvatar({
   if (avatarUrl) {
     return (
       <Image
-        className={`rounded-full border border-white/70 object-cover ${sizeClass} ${className}`}
+        className={`member-avatar member-avatar--image ${sizeClass} ${className}`}
         mode='aspectFill'
         src={avatarUrl}
       />
@@ -37,7 +37,7 @@ export default function MemberAvatar({
 
   return (
     <View
-      className={`flex items-center justify-center rounded-full bg-white/70 text-rose-500 ${sizeClass} ${className}`}
+      className={`member-avatar member-avatar--fallback ${sizeClass} ${className}`}
     >
       <Text>{getMemberAvatarFallbackText(member)}</Text>
     </View>

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Button, Text, View } from '@tarojs/components'
 import Taro, { useDidShow, useRouter } from '@tarojs/taro'
 import AsyncContainer from '@/components/async-container'
@@ -33,6 +33,7 @@ const getAssigneeSubtitle = (member: WorkspaceMemberView) => {
 export default function Order() {
   const router = useRouter()
   const workspaceId = getRouteNumberParam(router.params, 'workspaceId')
+  const preSelectedRecipeId = getRouteNumberParam(router.params, 'recipeId')
 
   // 使用独立 Store 获取数据
   const recipes = useRecipeStore((s) => s.recipes)
@@ -43,10 +44,10 @@ export default function Order() {
   const refreshMembers = useMemberStore((s) => s.refreshMembers)
   const loadWorkspaces = useWorkspaceStore((s) => s.loadWorkspaces)
 
-  // 本地选择状态
-  const [selectedRecipeId, setSelectedRecipeId] = Taro.useState<number | null>(null)
-  const [selectedAssigneeId, setSelectedAssigneeId] = Taro.useState<number | null>(null)
-  const [submitting, setSubmitting] = Taro.useState(false)
+  // 本地选择状态 — 支持预选菜谱
+  const [selectedRecipeId, setSelectedRecipeId] = useState<number | null>(preSelectedRecipeId || null)
+  const [selectedAssigneeId, setSelectedAssigneeId] = useState<number | null>(null)
+  const [submitting, setSubmitting] = useState(false)
 
   const loadData = useCallback(async () => {
     if (!workspaceId) {
@@ -98,9 +99,9 @@ export default function Order() {
     <View className='page-shell page-shell--sunset px-4 py-5 pb-32'>
       <SubPageHeader title='发起任务' description='先选菜谱，再指定执行人。' />
       <PageHero
-        badge='Task Studio'
-        title='发起点餐任务'
-        description='先选菜谱，再指定执行人。系统会自动生成一笔任务，后续进度都在任务详情里推进。'
+        badge='NEW ORDER'
+        title='认真地点一道菜'
+        description='先选今天想吃的，再把这份期待交给一位执行人。创建后，进度会安静地记录在任务详情里。'
         tone='sunset'
         stats={
           <View className='hero-stat-grid'>

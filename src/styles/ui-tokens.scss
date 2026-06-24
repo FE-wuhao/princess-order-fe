@@ -11,24 +11,24 @@
 :root,
 page {
   // ── 背景 ──
-  --ui-bg-page: #fff8f7;
+  --ui-bg-page: #f7f0e4;
   --ui-bg-elevated: #ffffff;
-  --ui-bg-muted: #fff2ef;
-  --ui-bg-soft: #fffaf2;
+  --ui-bg-muted: #efe2d1;
+  --ui-bg-soft: #fbf7ef;
 
   // ── 文本 ──
-  --ui-text-primary: #2f1f28;
-  --ui-text-secondary: #6f5a67;
-  --ui-text-tertiary: #a18c98;
+  --ui-text-primary: #321f25;
+  --ui-text-secondary: #705e5b;
+  --ui-text-tertiary: #9b8981;
 
   // ── 品牌色（暖粉）──
-  --ui-brand-500: #c65a72;
-  --ui-brand-600: #af4660;
-  --ui-brand-soft: #fde8ec;
+  --ui-brand-500: #a92f4c;
+  --ui-brand-600: #86233b;
+  --ui-brand-soft: #f4dce0;
 
   // ── 强调色（蓝紫）──
-  --ui-accent-500: #7c8fd8;
-  --ui-accent-soft: #ecf0ff;
+  --ui-accent-500: #2f5d62;
+  --ui-accent-soft: #dce8e4;
 
   // ── 语义色 ──
   --ui-warning-soft: #fff3d8;
@@ -41,11 +41,11 @@ page {
   --ui-neutral-text: #7a6874;
 
   // ── 阴影 ──
-  --ui-shadow-card: 0 5px 15px rgba(116, 73, 95, 0.08);
-  --ui-shadow-floating: 0 10px 24px rgba(116, 73, 95, 0.14);
+  --ui-shadow-card: 0 1px 0 rgba(67, 42, 37, 0.08);
+  --ui-shadow-floating: 0 16px 40px rgba(67, 42, 37, 0.16);
 
   // ── 圆角 ──
-  --ui-radius-card: 18px;
+  --ui-radius-card: 12px;
   --ui-radius-pill: 9999px;
 
   // ── 间距（4px 网格体系）──

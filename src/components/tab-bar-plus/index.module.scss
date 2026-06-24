@@ -1,0 +1,39 @@
+:global {
+  .taro-tabbar__container,
+  .taro-tabbar__panel { display: none !important; }
+}
+
+.custom-tabbar-spacer { height: calc(env(safe-area-inset-bottom) + 74px); }
+
+.custom-tabbar {
+  position: fixed;
+  left: 14px;
+  right: 14px;
+  bottom: calc(env(safe-area-inset-bottom) + 10px);
+  z-index: 999;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: center;
+  height: 62px;
+  overflow: visible;
+  border: 1px solid rgba(50, 31, 37, .14);
+  border-radius: 16px;
+  background: rgba(255, 253, 248, .96);
+  box-shadow: 0 12px 32px rgba(67, 42, 37, .14);
+}
+
+.custom-tabbar__item { display: flex; height: 54px; flex-direction: column; align-items: center; justify-content: center; color: var(--ui-text-tertiary); }
+.custom-tabbar__item--active { color: var(--ui-brand-500); }
+.custom-tabbar__icon { width: 20px; height: 20px; }
+.custom-tabbar__text { margin-top: 3px; font-size: 9px; line-height: 13px; font-weight: 600; letter-spacing: .5px; }
+.custom-tabbar__center-wrap { display: flex; height: 54px; flex-direction: column; align-items: center; justify-content: center; color: var(--ui-brand-500); }
+.custom-tabbar__plus-btn { display: flex; width: 28px; height: 28px; align-items: center; justify-content: center; border-radius: 9px; background: var(--ui-brand-600); box-sizing: border-box; }
+.custom-tabbar__plus-icon { position: relative; width: 14px; height: 14px; }
+.custom-tabbar__plus-icon::before,
+.custom-tabbar__plus-icon::after { content: ''; position: absolute; top: 50%; left: 50%; border-radius: 2px; background: #fffaf2; transform: translate(-50%, -50%); }
+.custom-tabbar__plus-icon::before { width: 14px; height: 2px; }
+.custom-tabbar__plus-icon::after { width: 2px; height: 14px; }
+
+@media (min-width: 520px) {
+  .custom-tabbar { left: 50%; right: auto; width: 430px; transform: translateX(-50%); }
+}

@@ -34,7 +34,12 @@ interface TaskDetail {
   rejectReason?: string | null
   cancelReason?: string | null
   recipe?: { id: number; name: string }
-  recipeSnapshot?: { recipeName?: string } | null
+  recipeSnapshot?: {
+    recipeName?: string
+    description?: string | null
+    ingredientsJson?: Array<{ name: string; amount: string; unit: string }>
+    stepsJson?: Array<{ content: string; source: string }>
+  } | null
   workspace?: { id: number; name: string } | null
   creator?: Pick<User, 'id' | 'nickname'>
   assignee?: Pick<User, 'id' | 'nickname'>
@@ -85,6 +90,8 @@ export default function Task() {
   const [loading, setLoading] = useState(false)
   const [acting, setActing] = useState(false)
   const [retryingLogId, setRetryingLogId] = useState<number | null>(null)
+  const [showTimeline, setShowTimeline] = useState(false)
+  const [showNotifications, setShowNotifications] = useState(false)
 
   const router = useRouter()
   const taskId = getRouteNumberParam(router.params, 'id')
@@ -298,7 +305,6 @@ export default function Task() {
   return (
     <Page
       title='任务详情'
-      description='任务状态、时间线和通知记录都在这里。'
       tone='sky'
       footer={footer}
     >
@@ -307,10 +313,9 @@ export default function Task() {
           <Text className='text-xl font-bold text-gray-900'>{taskTitle}</Text>
           <StatusChip label={orderStatusMeta.label} tone={orderStatusMeta.tone} size='md' />
         </View>
-        <Text className='block text-sm text-gray-600'>空间：{workspaceName}</Text>
-        <Text className='mt-1 block text-sm text-gray-600'>
-          发起人：{task.creator?.nickname || '未命名'} / 执行人：
-          {task.assignee?.nickname || '未命名'}
+        <Text className='block text-sm text-gray-600'>
+          {task.creator?.nickname || '未命名'} → {task.assignee?.nickname || '待指派'}
+          {workspaceName ? ` · ${workspaceName}` : ''}
         </Text>
         {task.remark ? (
           <View className='mt-4 rounded-2xl bg-sky-50 px-4 py-3'>
@@ -332,95 +337,137 @@ export default function Task() {
         ) : null}
       </View>
 
+      {/* 制作内容 — 执行人最需要，紧跟摘要 */}
+      {task.recipeSnapshot?.ingredientsJson?.length || task.recipeSnapshot?.stepsJson?.length ? (
+        <SectionCard title='制作内容' variant='soft'>
+          {task.recipeSnapshot?.ingredientsJson?.length ? (
+            <View className='recipe-detail-ingredient-cloud'>
+              {task.recipeSnapshot.ingredientsJson.map((ing, idx) => (
+                <View key={idx} className='recipe-detail-ingredient-chip'>
+                  <Text className='recipe-detail-ingredient-chip__name'>{ing.name}</Text>
+                  <Text className='recipe-detail-ingredient-chip__amount'>
+                    {[ing.amount, ing.unit].filter(Boolean).join(' ') || '适量'}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          ) : null}
+          {task.recipeSnapshot?.stepsJson?.length ? (
+            <View className={task.recipeSnapshot.ingredientsJson?.length ? 'mt-3' : ''}>
+              {task.recipeSnapshot.stepsJson.map((step, idx) => (
+                <View key={idx} className='feature-list-card feature-list-card--rose'>
+                  <View className='flex items-start justify-between gap-2'>
+                    <Text className='tool-pill'>{idx + 1}</Text>
+                    <Text className='feature-list-card__description flex-1'>{step.content}</Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          ) : null}
+        </SectionCard>
+      ) : null}
+
+      {/* 时间线 — 默认折叠 */}
       <SectionCard
         title='任务时间线'
-        description='把关键动作和备注按顺序收好，方便快速回顾整笔任务。'
+        meta={task.events?.length ? `${task.events.length} 条` : undefined}
+        actions={
+          <Text
+            className='form-text-link'
+            onClick={() => setShowTimeline((v) => !v)}
+          >
+            {showTimeline ? '收起' : '展开'}
+          </Text>
+        }
       >
-        {task.events && task.events.length > 0 ? (
-          <View>
-            {task.events.map((event) => (
-              <View key={event.id} className='feature-list-card feature-list-card--sky'>
-                <View className='flex items-center justify-between'>
-                  <Text className='text-sm font-medium text-gray-900'>
-                    {eventLabelMap[event.eventType] || event.eventType}
-                  </Text>
-                  <Text className='text-xs text-gray-500'>{event.createdAt || '暂无'}</Text>
-                </View>
-                <Text className='mt-1 block text-xs text-gray-500'>
-                  操作人：{event.operator?.nickname || '系统'}
-                </Text>
-                {event.fromStatus || event.toStatus ? (
+        {showTimeline ? (
+          task.events && task.events.length > 0 ? (
+            <View>
+              {task.events.map((event) => (
+                <View key={event.id} className='feature-list-card feature-list-card--sky'>
+                  <View className='flex items-center justify-between'>
+                    <Text className='text-sm font-medium text-gray-900'>
+                      {eventLabelMap[event.eventType] || event.eventType}
+                    </Text>
+                    <Text className='text-xs text-gray-500'>{event.createdAt || '暂无'}</Text>
+                  </View>
                   <Text className='mt-1 block text-xs text-gray-500'>
-                    状态：{event.fromStatus || '无'} → {event.toStatus || '无'}
+                    操作人：{event.operator?.nickname || '系统'}
                   </Text>
-                ) : null}
-                {event.payload?.remark ? (
-                  <Text className='mt-2 block text-sm text-gray-700'>
-                    备注：{String(event.payload.remark)}
-                  </Text>
-                ) : null}
-                {event.payload?.reason ? (
-                  <Text className='mt-2 block text-sm text-gray-700'>
-                    原因：{String(event.payload.reason)}
-                  </Text>
-                ) : null}
-              </View>
-            ))}
-          </View>
+                  {event.payload?.remark ? (
+                    <Text className='mt-2 block text-sm text-gray-700'>
+                      备注：{String(event.payload.remark)}
+                    </Text>
+                  ) : null}
+                  {event.payload?.reason ? (
+                    <Text className='mt-2 block text-sm text-gray-700'>
+                      原因：{String(event.payload.reason)}
+                    </Text>
+                  ) : null}
+                </View>
+              ))}
+            </View>
+          ) : (
+            <EmptyState tone='sky' title='暂无事件记录' description='任务流转后这里会自动补齐。' />
+          )
         ) : (
-          <EmptyState
-            tone='sky'
-            title='暂无事件记录'
-            description='任务时间线会在有人接任务、开始制作、完成或确认后自动补齐。'
-          />
+          <Text className='block text-sm text-gray-500'>点「展开」查看完整流转记录。</Text>
         )}
       </SectionCard>
 
+      {/* 通知记录 — 默认折叠 */}
       <SectionCard
         title='通知记录'
-        description='系统通知的发送状态、模板和异常信息都在这里查看。'
+        meta={task.notificationLogs?.length ? `${task.notificationLogs.length} 条` : undefined}
         variant='soft'
+        actions={
+          <Text
+            className='form-text-link'
+            onClick={() => setShowNotifications((v) => !v)}
+          >
+            {showNotifications ? '收起' : '展开'}
+          </Text>
+        }
       >
-        {task.notificationLogs && task.notificationLogs.length > 0 ? (
-          <View>
-            {task.notificationLogs.map((log) => (
-              <View key={log.id} className='feature-list-card'>
-                <View className='flex items-center justify-between'>
-                  <Text className='text-sm font-medium text-gray-900'>
-                    {notificationTitleMap[log.bizType]}
-                  </Text>
-                  <StatusChip
-                    label={notificationStatusMetaMap[log.status as NotificationStatus].label}
-                    tone={notificationStatusMetaMap[log.status as NotificationStatus].tone}
-                  />
-                </View>
-                <Text className='mt-1 block text-xs text-gray-500'>模板：{log.templateCode}</Text>
-                <Text className='mt-1 block text-xs text-gray-500'>
-                  创建：{log.createdAt || '暂无'} / 发送：{log.sentAt || '未发送'}
-                </Text>
-                {log.errorMessage ? (
-                  <Text className='mt-2 block text-sm text-rose-500'>错误：{log.errorMessage}</Text>
-                ) : null}
-                {log.status === 'failed' ? (
-                  <View className='mt-3'>
-                    <Button
-                      className='app-button app-button--warn app-button--mini'
-                      disabled={retryingLogId === log.id}
-                      onClick={() => handleRetryNotification(log.id)}
-                    >
-                      {retryingLogId === log.id ? '重试中...' : '重试通知'}
-                    </Button>
+        {showNotifications ? (
+          task.notificationLogs && task.notificationLogs.length > 0 ? (
+            <View>
+              {task.notificationLogs.map((log) => (
+                <View key={log.id} className='feature-list-card'>
+                  <View className='flex items-center justify-between'>
+                    <Text className='text-sm font-medium text-gray-900'>
+                      {notificationTitleMap[log.bizType]}
+                    </Text>
+                    <StatusChip
+                      label={notificationStatusMetaMap[log.status as NotificationStatus].label}
+                      tone={notificationStatusMetaMap[log.status as NotificationStatus].tone}
+                    />
                   </View>
-                ) : null}
-              </View>
-            ))}
-          </View>
+                  <Text className='mt-1 block text-xs text-gray-500'>
+                    发送：{log.sentAt || '未发送'}
+                  </Text>
+                  {log.errorMessage ? (
+                    <Text className='mt-2 block text-sm text-rose-500'>错误：{log.errorMessage}</Text>
+                  ) : null}
+                  {log.status === 'failed' ? (
+                    <View className='mt-3'>
+                      <Button
+                        className='app-button app-button--warn app-button--mini'
+                        disabled={retryingLogId === log.id}
+                        onClick={() => handleRetryNotification(log.id)}
+                      >
+                        {retryingLogId === log.id ? '重试中...' : '重试通知'}
+                      </Button>
+                    </View>
+                  ) : null}
+                </View>
+              ))}
+            </View>
+          ) : (
+            <EmptyState tone='gray' title='还没有通知记录' description='任务相关通知会在这里出现。' />
+          )
         ) : (
-          <EmptyState
-            tone='gray'
-            title='还没有通知记录'
-            description='当系统尝试发送发任务、接任务、完成或超时通知时，这里会自动出现记录。'
-          />
+          <Text className='block text-sm text-gray-500'>点「展开」查看发送状态与异常。</Text>
         )}
       </SectionCard>
     </Page>

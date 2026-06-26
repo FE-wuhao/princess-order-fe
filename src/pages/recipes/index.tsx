@@ -4,10 +4,9 @@ import Taro, { useDidShow } from '@tarojs/taro'
 import AsyncContainer from '@/components/async-container'
 import EmptyState from '@/components/empty-state'
 import Page from '@/components/page'
-import PageHero from '@/components/page-hero'
+import PageToolbar from '@/components/page-toolbar'
 import Pressable from '@/components/pressable'
 import TabBarPlus from '@/components/tab-bar-plus'
-import SectionCard from '@/components/section-card'
 import { SkeletonCard } from '@/components/skeleton'
 import { useRecipeStore } from '@/stores/useRecipeStore'
 import { useWorkspaceStore } from '@/stores/useWorkspaceStore'
@@ -90,76 +89,53 @@ export default function RecipesPage() {
     })
   }
 
+  const isLoading = (loading || recipesMeta.loading) && activeRecipes.length === 0
+
   return (
     <Page tone='sunset' showHeader={false} contentClassName='pb-28'>
-      <PageHero
-        badge='OUR MENU'
-        title='家里的常备菜单'
-        description='把做过、喜欢、还想再吃的菜留在这里。每一份菜谱，都是下次点单少纠结一点。'
-        tone='sunset'
-        stats={
-          <View className='hero-stat-grid'>
-            <View className='hero-stat-card'>
-              <Text className='hero-stat-card__label'>当前空间</Text>
-              <Text className='hero-stat-card__value'>{activeWorkspace?.name || '未选择'}</Text>
-              <Text className='hero-stat-card__hint'>正在为这个共同厨房整理</Text>
-            </View>
-            <View className='hero-stat-card'>
-              <Text className='hero-stat-card__label'>可用菜谱</Text>
-              <Text className='hero-stat-card__value'>{activeRecipes.length}</Text>
-              <Text className='hero-stat-card__hint'>可以直接用来发起点单</Text>
-            </View>
-          </View>
-        }
+      <PageToolbar
+        title={activeWorkspace?.name || '菜谱'}
+        subtitle={`${activeRecipes.length} 个菜谱`}
         actions={
-          <Button className='app-button app-button--primary' onClick={handleCreateRecipe}>
+          <Button className='app-button app-button--primary app-button--mini' onClick={handleCreateRecipe}>
             新建菜谱
           </Button>
         }
       />
 
-      <SectionCard
-        title='菜谱列表'
-        description='进入详情后可继续查看食材、步骤和编辑内容。'
-        meta={activeWorkspace ? `${activeWorkspace.name} · ${activeRecipes.length} 个` : '未选择空间'}
-        variant='soft'
+      <AsyncContainer
+        loading={isLoading}
+        data={activeRecipes}
+        skeleton={<View><SkeletonCard /><SkeletonCard /><SkeletonCard /></View>}
+        empty={
+          !activeWorkspace ? (
+            <EmptyState tone='gray' title='还没有可用空间' description='请先回首页选择或加入一个空间。' />
+          ) : (
+            <EmptyState tone='rose' title='这个空间还没有菜谱' description='先新建一个常做菜，后续发起任务时就能直接挑选。' />
+          )
+        }
       >
-        <AsyncContainer
-          loading={(loading || recipesMeta.loading) && activeRecipes.length === 0}
-          data={activeRecipes}
-          skeleton={<View><SkeletonCard /><SkeletonCard /><SkeletonCard /></View>}
-          empty={
-            !activeWorkspace ? (
-              <EmptyState tone='gray' title='还没有可用空间' description='请先回首页选择或加入一个空间。' />
-            ) : (
-              <EmptyState tone='rose' title='这个空间还没有菜谱' description='先新建一个常做菜，后续发起任务时就能直接挑选。' />
-            )
-          }
-        >
-          {(recipeList) => (
-            <View>
-              {recipeList.map((recipe: Recipe) => (
-                <Pressable key={recipe.id} onClick={() => handleRecipeClick(recipe.id)}>
-                  <View className='feature-list-card feature-list-card--rose'>
-                    <View className='mb-2 flex items-center justify-between'>
-                      <Text className='feature-list-card__title'>{recipe.name}</Text>
-                      <Text className='tool-pill'>{getDifficultyLabel(recipe.difficulty)}</Text>
-                    </View>
-                    <Text className='feature-list-card__description'>
-                      {recipe.description || '进入详情查看食材、做法和编辑入口。'}
-                    </Text>
-                    <Text className='feature-list-card__meta'>
-                      预计 {recipe.estimatedMinutes || '—'} 分钟 / {recipe.servingSize || '—'} 人份
-                    </Text>
+        {(recipeList) => (
+          <View>
+            {recipeList.map((recipe: Recipe) => (
+              <Pressable key={recipe.id} onClick={() => handleRecipeClick(recipe.id)}>
+                <View className='feature-list-card feature-list-card--rose'>
+                  <View className='mb-2 flex items-center justify-between'>
+                    <Text className='feature-list-card__title'>{recipe.name}</Text>
+                    <Text className='tool-pill'>{getDifficultyLabel(recipe.difficulty)}</Text>
                   </View>
-                </Pressable>
-              ))}
-            </View>
-          )}
-        </AsyncContainer>
-      </SectionCard>
+                  <Text className='feature-list-card__meta'>
+                    预计 {recipe.estimatedMinutes || '—'} 分钟 / {recipe.servingSize || '—'} 人份
+                  </Text>
+                </View>
+              </Pressable>
+            ))}
+          </View>
+        )}
+      </AsyncContainer>
 
       {isH5 ? <TabBarPlus activeKey='recipes' /> : null}
     </Page>
   )
 }
+

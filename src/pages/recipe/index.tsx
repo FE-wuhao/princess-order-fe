@@ -2,9 +2,9 @@ import { useState, useEffect, useCallback } from 'react'
 import { View, Text, Button } from '@tarojs/components'
 import Taro, { useRouter } from '@tarojs/taro'
 import AsyncContainer from '@/components/async-container'
+import CompactHeader from '@/components/compact-header'
 import EmptyState from '@/components/empty-state'
 import Page from '@/components/page'
-import PageHero from '@/components/page-hero'
 import Pressable from '@/components/pressable'
 import QuickCreateSheet from '@/components/quick-create-sheet'
 import SectionCard from '@/components/section-card'
@@ -67,11 +67,16 @@ export default function RecipePage() {
 
   return (
     <>
-      <Page title='菜谱详情' tone='sunset' footer={footer}>
-        <Text className='page-layout__description'>
-          从这里查看内容，修改或补 AI 草稿请进入编辑页。
-        </Text>
-
+      <Page
+        title='菜谱详情'
+        tone='sunset'
+        footer={footer}
+        headerRight={
+          <Button className='app-button app-button--ghost app-button--mini' onClick={handleEdit}>
+            编辑
+          </Button>
+        }
+      >
         <AsyncContainer
           loading={loading}
           data={recipe}
@@ -80,35 +85,26 @@ export default function RecipePage() {
         >
           {(data) => (
             <View>
-              <PageHero
-                badge='Recipe'
-                title={data.name}
-                description={data.description || '把常做菜沉淀成菜谱，发单和执行都会更顺。'}
+              <CompactHeader
                 tone='sunset'
-                stats={
-                  <View className='hero-stat-grid'>
-                    <View className='hero-stat-card'>
-                      <Text className='hero-stat-card__label'>难度</Text>
-                      <Text className='hero-stat-card__value'>{difficultyLabel}</Text>
-                      <Text className='hero-stat-card__hint'>用于发单时快速判断</Text>
-                    </View>
-                    <View className='hero-stat-card'>
-                      <Text className='hero-stat-card__label'>做法步骤</Text>
-                      <Text className='hero-stat-card__value'>{data.methods?.length || 0}</Text>
-                      <Text className='hero-stat-card__hint'>AI 生成步骤会打上标记</Text>
-                    </View>
-                  </View>
-                }
-                actions={
-                  <Button className='app-button app-button--ghost' onClick={handleEdit}>
-                    编辑菜谱
-                  </Button>
+                title={data.name}
+                desc={data.description || undefined}
+                meta={
+                  <>
+                    <Text className='compact-header__meta-item'>{difficultyLabel}</Text>
+                    <Text className='compact-header__meta-item'>{data.methods?.length || 0} 步</Text>
+                    {data.estimatedMinutes ? (
+                      <Text className='compact-header__meta-item'>{data.estimatedMinutes} 分钟</Text>
+                    ) : null}
+                    {data.servingSize ? (
+                      <Text className='compact-header__meta-item'>{data.servingSize} 人份</Text>
+                    ) : null}
+                  </>
                 }
               />
 
               <SectionCard
                 title='食材'
-                description='食材会同步到发单与执行场景，建议按可采购的粒度写。'
                 meta={`${(data.ingredients as RecipeIngredient[] | undefined)?.length || 0} 项`}
                 variant='soft'
               >
@@ -128,12 +124,7 @@ export default function RecipePage() {
                 )}
               </SectionCard>
 
-              <SectionCard
-                title='做法'
-                description='步骤尽量一句一事；如果要重新生成整套内容，请回到编辑页使用 AI 草稿。'
-                meta={`${data.methods?.length || 0} 步`}
-                variant='accent'
-              >
+              <SectionCard title='做法' meta={`${data.methods?.length || 0} 步`} variant='accent'>
                 {data.methods && (data.methods as RecipeMethod[]).length > 0 ? (
                   <View>
                     {(data.methods as RecipeMethod[]).map((method, index) => (

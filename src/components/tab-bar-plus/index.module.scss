@@ -3,7 +3,7 @@
   .taro-tabbar__panel { display: none !important; }
 }
 
-.custom-tabbar-spacer { height: calc(env(safe-area-inset-bottom) + 74px); }
+.custom-tabbar-spacer { height: calc(env(safe-area-inset-bottom) + 82px); }
 
 .custom-tabbar {
   position: fixed;
@@ -14,25 +14,147 @@
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   align-items: center;
-  height: 62px;
+  height: 64px;
   overflow: visible;
   border: 1px solid rgba(50, 31, 37, .14);
-  border-radius: 16px;
+  border-radius: 18px;
   background: rgba(255, 253, 248, .96);
   box-shadow: 0 12px 32px rgba(67, 42, 37, .14);
 }
 
-.custom-tabbar__item { display: flex; height: 54px; flex-direction: column; align-items: center; justify-content: center; color: var(--ui-text-tertiary); }
-.custom-tabbar__item--active { color: var(--ui-brand-500); }
-.custom-tabbar__icon { width: 20px; height: 20px; }
-.custom-tabbar__text { margin-top: 3px; font-size: 9px; line-height: 13px; font-weight: 600; letter-spacing: .5px; }
-.custom-tabbar__center-wrap { display: flex; height: 54px; flex-direction: column; align-items: center; justify-content: center; color: var(--ui-brand-500); }
-.custom-tabbar__plus-btn { display: flex; width: 28px; height: 28px; align-items: center; justify-content: center; border-radius: 9px; background: var(--ui-brand-600); box-sizing: border-box; }
-.custom-tabbar__plus-icon { position: relative; width: 14px; height: 14px; }
-.custom-tabbar__plus-icon::before,
-.custom-tabbar__plus-icon::after { content: ''; position: absolute; top: 50%; left: 50%; border-radius: 2px; background: #fffaf2; transform: translate(-50%, -50%); }
-.custom-tabbar__plus-icon::before { width: 14px; height: 2px; }
-.custom-tabbar__plus-icon::after { width: 2px; height: 14px; }
+.custom-tabbar__item {
+  display: flex;
+  height: 56px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--ui-text-tertiary);
+}
+
+.custom-tabbar__item--active {
+  color: var(--ui-brand-500);
+}
+
+.custom-tabbar__icon {
+  position: relative;
+  width: 24px;
+  height: 24px;
+  color: inherit;
+  flex-shrink: 0;
+}
+
+.custom-tabbar__text {
+  margin-top: 4px;
+  font-size: 10px;
+  line-height: 14px;
+  font-weight: 600;
+  letter-spacing: .5px;
+  color: inherit;
+}
+
+// ── 今日：屋顶(三角) + 主体(带底圆角矩形) + 门(背景色小方块挖洞) ──
+.custom-tabbar__icon--home::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 0;
+  height: 0;
+  border-left: 12px solid transparent;
+  border-right: 12px solid transparent;
+  border-bottom: 9px solid currentColor;
+  transform: translateX(-50%);
+}
+
+.custom-tabbar__icon--home::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  bottom: 0;
+  width: 16px;
+  height: 13px;
+  background: currentColor;
+  border-radius: 0 0 3px 3px;
+}
+
+.custom-tabbar__home-door {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 5px;
+  height: 6px;
+  background: rgba(255, 253, 248, .96);
+  border-radius: 2px 2px 0 0;
+  transform: translateX(-50%);
+}
+
+// ── 菜谱：圆角卡片(顶部圆角) + 两条横线 ──
+.custom-tabbar__icon--recipe::before {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 2px;
+  width: 18px;
+  height: 20px;
+  background: currentColor;
+  border-radius: 4px 4px 3px 3px;
+}
+
+.custom-tabbar__recipe-line {
+  position: absolute;
+  left: 7px;
+  height: 1.8px;
+  background: rgba(255, 253, 248, .96);
+  border-radius: 1px;
+}
+.custom-tabbar__recipe-line--1 { top: 7px; width: 10px; }
+.custom-tabbar__recipe-line--2 { top: 11px; width: 7px; }
+
+// ── 我的：头(圆) + 肩(半圆) ──
+.custom-tabbar__icon--profile::before {
+  content: '';
+  position: absolute;
+  left: 1px;
+  bottom: 0;
+  width: 22px;
+  height: 11px;
+  background: currentColor;
+  border-radius: 11px 11px 0 0;
+}
+
+.custom-tabbar__icon--profile::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 9px;
+  height: 9px;
+  background: currentColor;
+  border-radius: 50%;
+  transform: translateX(-50%);
+}
+
+// ── 点单：与其他项同尺寸(24px)的描边「+」，常亮品牌色 ──
+.custom-tabbar__item--plus {
+  color: var(--ui-brand-500);
+}
+
+.custom-tabbar__icon--plus {
+  position: relative;
+}
+
+.custom-tabbar__plus-h,
+.custom-tabbar__plus-v {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  background: currentColor;
+  border-radius: 2px;
+  transform: translate(-50%, -50%);
+}
+
+.custom-tabbar__plus-h { width: 18px; height: 2.4px; }
+.custom-tabbar__plus-v { width: 2.4px; height: 18px; }
 
 @media (min-width: 520px) {
   .custom-tabbar { left: 50%; right: auto; width: 430px; transform: translateX(-50%); }

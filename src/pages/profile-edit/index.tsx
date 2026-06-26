@@ -75,8 +75,8 @@ export default function ProfileEditPage() {
   }
 
   return (
-    <Page title='我的资料' description='头像和昵称会同步到空间成员列表和任务详情。' tone='sky' className='animate-fade-in-up'>
-      <SectionCard title='账号信息' description='点击头像更新图片，点击昵称修改称呼。' variant='accent'>
+    <Page title='我的资料' tone='sky' className='animate-fade-in-up'>
+      <SectionCard title='账号信息' variant='accent'>
         <View className='profile-row'>
           <Text className='profile-row__label'>头像</Text>
           <View className='flex items-center'>

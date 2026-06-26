@@ -80,47 +80,27 @@ export default function Profile() {
 
   return (
     <Page tone='sky' showHeader={false} contentClassName='pb-28'>
-      <SectionCard title='我的账号' description='资料维护、通知查看和退出登录都收在这里。' variant='accent'>
-        <View className='profile-summary'>
-          <View
-            className='profile-summary__hero'
-            onClick={() => {
-              Taro.navigateTo({ url: '/pages/profile-edit/index' })
-            }}
-          >
-            <MemberAvatar member={avatarMember} size='lg' />
+      <SectionCard variant='accent'>
+        <Pressable onClick={() => { Taro.navigateTo({ url: '/pages/profile-edit/index' }) }}>
+          <View className='profile-summary__hero'>
+            <MemberAvatar member={avatarMember} size='md' />
             <View className='profile-summary__text'>
               <Text className='profile-summary__name'>{user.nickname || '未填写昵称'}</Text>
-              <Text className='profile-summary__hint'>点击头像进入资料维护页</Text>
+              <Text className='profile-summary__hint'>头像、昵称 ›</Text>
             </View>
+            <View className='icon-arrow-right' />
           </View>
+        </Pressable>
 
-          <View
-            className='profile-summary__row'
-            onClick={() => {
-              Taro.navigateTo({ url: '/pages/profile-edit/index' })
-            }}
-          >
-            <Text className='profile-summary__label'>我的资料</Text>
-            <View className='profile-summary__value-wrap'>
-              <Text className='profile-summary__value'>头像、昵称</Text>
-              <View className='icon-arrow-right' />
-            </View>
-          </View>
-
-          <View
-            className='profile-summary__row'
-            onClick={() => {
-              Taro.navigateTo({ url: '/pages/notifications/index' })
-            }}
-          >
+        <Pressable onClick={() => { Taro.navigateTo({ url: '/pages/notifications/index' }) }}>
+          <View className='profile-summary__row'>
             <Text className='profile-summary__label'>通知记录</Text>
             <View className='profile-summary__value-wrap'>
-              <Text className='profile-summary__value'>{unreadCount > 0 ? `${unreadCount} 条失败` : '查看'}</Text>
+              <Text className='profile-summary__value'>{unreadCount > 0 ? `${unreadCount} 条` : '查看'}</Text>
               <View className='icon-arrow-right' />
             </View>
           </View>
-        </View>
+        </Pressable>
       </SectionCard>
 
       <View className='mt-5'>

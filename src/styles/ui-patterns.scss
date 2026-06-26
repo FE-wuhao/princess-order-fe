@@ -433,6 +433,7 @@ taro-button-core.app-button:not([disabled]),
 
 .feature-list-card {
   padding: 16px;
+  margin-bottom: 14px;
   border-radius: 16px;
   border: 1px solid rgba(198, 90, 114, 0.06);
   background: rgba(255, 255, 255, 0.78);
@@ -441,7 +442,7 @@ taro-button-core.app-button:not([disabled]),
 }
 
 .feature-list-card + .feature-list-card {
-  margin-top: 10px;
+  margin-top: 0;
 }
 
 .feature-list-card--rose {
@@ -787,6 +788,186 @@ button.action-row__item:only-child {
   width: 100%;
   height: 52px;
   min-height: 52px;
+}
+
+// ═══════════════════════════════════════════
+// 公共版面瘦身组件 — PageToolbar / CompactHeader / ReadyFooter
+// ═══════════════════════════════════════════
+
+.page-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.page-toolbar__main {
+  flex: 1;
+  min-width: 0;
+}
+
+.page-toolbar__title {
+  display: block;
+  color: var(--ui-text-primary);
+  font-size: 18px;
+  line-height: 26px;
+  font-weight: 700;
+}
+
+.page-toolbar__subtitle {
+  display: block;
+  margin-top: 2px;
+  color: var(--ui-text-tertiary);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.compact-header {
+  margin-bottom: 16px;
+  padding: 18px 20px;
+  border-radius: 22px;
+  background: var(--ui-bg-elevated);
+  box-shadow: 0 14px 30px rgba(116, 73, 95, 0.08);
+}
+
+.compact-header--accent {
+  border: 1px solid rgba(198, 90, 114, 0.1);
+}
+
+.compact-header--sky {
+  border: 1px solid rgba(124, 143, 216, 0.16);
+  background: linear-gradient(145deg, rgba(250, 251, 255, 0.98), rgba(239, 243, 255, 0.98));
+}
+
+.compact-header--sunset {
+  border: 1px solid rgba(212, 148, 84, 0.16);
+  background: linear-gradient(145deg, rgba(255, 251, 245, 0.98), rgba(255, 241, 229, 0.98));
+}
+
+.compact-header__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.compact-header__title {
+  display: block;
+  color: var(--ui-text-primary);
+  font-size: 22px;
+  line-height: 30px;
+  font-weight: 700;
+}
+
+.compact-header__desc {
+  display: block;
+  margin-top: 6px;
+  color: var(--ui-text-secondary);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.compact-header__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.compact-header__meta-item {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: var(--ui-radius-pill);
+  background: rgba(198, 90, 114, 0.08);
+  color: var(--ui-text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 600;
+}
+
+.ready-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ready-footer__hint {
+  color: var(--ui-text-tertiary);
+  font-size: 12px;
+  line-height: 18px;
+  text-align: center;
+}
+
+// ═══════════════════════════════════════════
+// 成员设置 — 识别条 / 属性条 picker / 紧凑权限行
+// ═══════════════════════════════════════════
+
+.member-form-identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.member-form-identity__text {
+  flex: 1;
+  min-width: 0;
+}
+
+.member-form-identity__name {
+  display: block;
+  color: var(--ui-text-primary);
+  font-size: 17px;
+  line-height: 24px;
+  font-weight: 700;
+}
+
+.member-form-identity__subtitle {
+  display: block;
+  margin-top: 2px;
+  color: var(--ui-text-tertiary);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.recipe-attr-bar__picker {
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(198, 90, 114, 0.18);
+  background: rgba(255, 255, 255, 0.96);
+  color: var(--ui-text-primary);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+}
+
+.permission-row--compact {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(198, 90, 114, 0.06);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.permission-row--compact:last-child {
+  margin-bottom: 0;
+}
+
+.permission-row--compact .permission-row__title {
+  color: var(--ui-text-primary);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
 }
 
 .form-dynamic-head {
@@ -1255,8 +1436,16 @@ taro-button-core.sub-page-header__back::after {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  width: 44px;
+  min-width: 44px;
   height: 44px;
+  flex-shrink: 0;
+
+  // 容纳文字按钮（如「编辑」），避免换行
+  .app-button,
+  taro-button-core.app-button {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
 }
 
 .sub-page-header__action {

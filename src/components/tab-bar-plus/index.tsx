@@ -1,17 +1,12 @@
 // TabBarPlus — 自定义 TabBar（替代 H5 原生 TabBar）
-// 三项 Tab + 中心加号按钮，视觉上完全替代原生 TabBar
-import { Image, Text, View } from '@tarojs/components'
+// 三项 Tab + 中心点单按钮，图标用纯 CSS 绘制以跟随 currentColor 着色
+// 小程序端对 SVG 兼容性差，故不使用 SVG，改用 CSS 图形
+import { Text, View } from '@tarojs/components'
 import Taro from '@tarojs/taro'
 import { useState } from 'react'
 import QuickCreateSheet from '@/components/quick-create-sheet'
 import { useWorkspaceStore } from '@/stores/useWorkspaceStore'
 import './index.module.scss'
-
-const TABS = [
-  { key: 'index', pagePath: '/pages/index/index', text: '今日', icon: require('@/assets/icons/home.png'), activeIcon: require('@/assets/icons/home-active.png') },
-  { key: 'recipes', pagePath: '/pages/recipes/index', text: '菜谱', icon: require('@/assets/icons/recipe.png'), activeIcon: require('@/assets/icons/recipe-active.png') },
-  { key: 'profile', pagePath: '/pages/profile/index', text: '我的', icon: require('@/assets/icons/profile.png'), activeIcon: require('@/assets/icons/profile-active.png') },
-]
 
 type TabKey = 'index' | 'recipes' | 'profile'
 
@@ -24,7 +19,15 @@ export default function TabBarPlus({ activeKey }: TabBarPlusProps) {
   const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId)
   const pages = Taro.getCurrentPages()
   const currentRoute = pages[pages.length - 1]?.route || ''
-  const selectedKey = activeKey || TABS.find((tab) => currentRoute === tab.pagePath.replace(/^\//, ''))?.key || 'index'
+  const selectedKey: TabKey =
+    activeKey ||
+    (currentRoute === 'pages/index/index'
+      ? 'index'
+      : currentRoute === 'pages/recipes/index'
+        ? 'recipes'
+        : currentRoute === 'pages/profile/index'
+          ? 'profile'
+          : 'index')
 
   const handleTabClick = (pagePath: string) => {
     Taro.switchTab({ url: pagePath })
@@ -45,39 +48,45 @@ export default function TabBarPlus({ activeKey }: TabBarPlusProps) {
 
       {/* 自定义 TabBar */}
       <View className='custom-tabbar'>
-        {/* 首页 */}
+        {/* 今日 */}
         <View
           className={`custom-tabbar__item ${selectedKey === 'index' ? 'custom-tabbar__item--active' : ''}`}
-          onClick={() => handleTabClick(TABS[0].pagePath)}
+          onClick={() => handleTabClick('/pages/index/index')}
         >
-          <Image className='custom-tabbar__icon' src={selectedKey === 'index' ? TABS[0].activeIcon : TABS[0].icon} />
-          <Text className='custom-tabbar__text'>{TABS[0].text}</Text>
-        </View>
-
-        {/* 快捷点单 */}
-        <View className='custom-tabbar__center-wrap' onClick={handlePlusClick}>
-          <View className='custom-tabbar__plus-btn'>
-            <View className='custom-tabbar__plus-icon' />
+          <View className='custom-tabbar__icon custom-tabbar__icon--home'>
+            <View className='custom-tabbar__home-door' />
           </View>
-          <Text className='custom-tabbar__text'>点单</Text>
+          <Text className='custom-tabbar__text'>今日</Text>
         </View>
 
         {/* 菜谱 */}
         <View
           className={`custom-tabbar__item ${selectedKey === 'recipes' ? 'custom-tabbar__item--active' : ''}`}
-          onClick={() => handleTabClick(TABS[1].pagePath)}
+          onClick={() => handleTabClick('/pages/recipes/index')}
         >
-          <Image className='custom-tabbar__icon' src={selectedKey === 'recipes' ? TABS[1].activeIcon : TABS[1].icon} />
-          <Text className='custom-tabbar__text'>{TABS[1].text}</Text>
+          <View className='custom-tabbar__icon custom-tabbar__icon--recipe'>
+            <View className='custom-tabbar__recipe-line custom-tabbar__recipe-line--1' />
+            <View className='custom-tabbar__recipe-line custom-tabbar__recipe-line--2' />
+          </View>
+          <Text className='custom-tabbar__text'>菜谱</Text>
+        </View>
+
+        {/* 快捷点单 */}
+        <View className='custom-tabbar__item custom-tabbar__item--plus' onClick={handlePlusClick}>
+          <View className='custom-tabbar__icon custom-tabbar__icon--plus'>
+            <View className='custom-tabbar__plus-h' />
+            <View className='custom-tabbar__plus-v' />
+          </View>
+          <Text className='custom-tabbar__text'>点单</Text>
         </View>
 
         {/* 我的 */}
         <View
           className={`custom-tabbar__item ${selectedKey === 'profile' ? 'custom-tabbar__item--active' : ''}`}
-          onClick={() => handleTabClick(TABS[2].pagePath)}
+          onClick={() => handleTabClick('/pages/profile/index')}
         >
-          <Image className='custom-tabbar__icon' src={selectedKey === 'profile' ? TABS[2].activeIcon : TABS[2].icon} />
-          <Text className='custom-tabbar__text'>{TABS[2].text}</Text>
+          <View className='custom-tabbar__icon custom-tabbar__icon--profile' />
+          <Text className='custom-tabbar__text'>我的</Text>
         </View>
       </View>
 

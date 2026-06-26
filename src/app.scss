@@ -363,3 +363,47 @@ taro-button-core.app-button::after,
   letter-spacing: 0.5px;
   pointer-events: none;
 }
+
+.login-brand {
+  display: block;
+  margin-bottom: 20px;
+  color: var(--ui-text-primary);
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.workspace-entry {
+  margin-top: 40px;
+  text-align: center;
+}
+
+.workspace-entry__title {
+  display: block;
+  color: var(--ui-text-primary);
+  font-size: 22px;
+  line-height: 30px;
+  font-weight: 700;
+}
+
+.workspace-entry__desc {
+  display: block;
+  margin-top: 8px;
+  color: var(--ui-text-secondary);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.workspace-entry__actions {
+  margin-top: 28px;
+  text-align: left;
+}
+
+.workspace-entry__loading {
+  display: block;
+  margin-top: 40px;
+  text-align: center;
+  color: var(--ui-text-tertiary);
+  font-size: 14px;
+}

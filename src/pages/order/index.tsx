@@ -5,8 +5,8 @@ import AsyncContainer from '@/components/async-container'
 import EmptyState from '@/components/empty-state'
 import MemberAvatar from '@/components/member-avatar'
 import Page from '@/components/page'
-import PageHero from '@/components/page-hero'
 import Pressable from '@/components/pressable'
+import ReadyFooter from '@/components/ready-footer'
 import SectionCard from '@/components/section-card'
 import { SkeletonCard } from '@/components/skeleton'
 import { useMemberStore } from '@/stores/useMemberStore'
@@ -92,47 +92,39 @@ export default function Order() {
   }
 
   const assignees = useMemo(() => members.filter((m) => m.canAcceptTask), [members])
-  const loading = recipesLoading || membersLoading
+  const selectedRecipe = useMemo(
+    () => recipes.find((r) => r.id === selectedRecipeId) || null,
+    [recipes, selectedRecipeId],
+  )
+  const selectedAssignee = useMemo(
+    () => assignees.find((m) => m.id === selectedAssigneeId) || null,
+    [assignees, selectedAssigneeId],
+  )
+  const ready = Boolean(selectedRecipe) && Boolean(selectedAssignee)
   const footer = (
-    <Button
-      className='app-button app-button--primary'
-      disabled={!selectedRecipeId || !selectedAssigneeId || submitting}
-      loading={submitting}
-      onClick={handleSubmit}
+    <ReadyFooter
+      hint={
+        ready
+          ? `已选：${selectedRecipe?.name || ''} · ${selectedAssignee ? getMemberDisplayName(selectedAssignee) : ''}`
+          : selectedRecipe
+          ? `已选菜谱：${selectedRecipe.name}，再选一位执行人`
+          : '请选择菜谱和执行人'
+      }
     >
-      创建任务
-    </Button>
+      <Button
+        className='app-button app-button--primary'
+        disabled={!ready || submitting}
+        loading={submitting}
+        onClick={handleSubmit}
+      >
+        创建任务
+      </Button>
+    </ReadyFooter>
   )
 
   return (
-    <Page title='发起任务' description='先选菜谱，再指定执行人。' tone='sunset' footer={footer}>
-      <PageHero
-        badge='NEW ORDER'
-        title='认真地点一道菜'
-        description='先选今天想吃的，再把这份期待交给一位执行人。创建后，进度会安静地记录在任务详情里。'
-        tone='sunset'
-        stats={
-          <View className='hero-stat-grid'>
-            <View className='hero-stat-card'>
-              <Text className='hero-stat-card__label'>已选菜谱</Text>
-              <Text className='hero-stat-card__value'>{selectedRecipeId ? 1 : 0}</Text>
-              <Text className='hero-stat-card__hint'>从当前空间菜谱库中选择</Text>
-            </View>
-            <View className='hero-stat-card'>
-              <Text className='hero-stat-card__label'>已选执行人</Text>
-              <Text className='hero-stat-card__value'>{selectedAssigneeId ? 1 : 0}</Text>
-              <Text className='hero-stat-card__hint'>仅展示可接任务成员</Text>
-            </View>
-          </View>
-        }
-      />
-
-      <SectionCard
-        title='选择菜谱'
-        description='建议优先选常做菜，任务信息会更清晰。'
-        meta={`${recipes.length} 个可用`}
-        variant='accent'
-      >
+    <Page title='发起任务' tone='sunset' footer={footer}>
+      <SectionCard title='选择菜谱' meta={`${recipes.length} 个可用`} variant='accent'>
         <AsyncContainer
           loading={recipesLoading && recipes.length === 0}
           data={recipes}
@@ -156,12 +148,7 @@ export default function Order() {
         </AsyncContainer>
       </SectionCard>
 
-      <SectionCard
-        title='选择执行人'
-        description='执行人需要具备可接任务权限，才能被分配任务。'
-        meta={`${assignees.length} 人可接任务`}
-        variant='soft'
-      >
+      <SectionCard title='选择执行人' meta={`${assignees.length} 人可接任务`} variant='soft'>
         <AsyncContainer
           loading={membersLoading && assignees.length === 0}
           data={assignees}

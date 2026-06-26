@@ -47,13 +47,13 @@ export default function QuickCreateSheet({
   // 弹窗打开时加载数据
   useEffect(() => {
     if (visible && workspaceId) {
-      setStep('recipe')
-      setSelectedRecipeId(null)
+      setStep(preSelectedRecipeId ? 'assignee' : 'recipe')
+      setSelectedRecipeId(preSelectedRecipeId || null)
       setSelectedAssigneeId(null)
       refreshRecipes(true)
       refreshMembers(true)
     }
-  }, [visible, workspaceId, refreshRecipes, refreshMembers])
+  }, [visible, workspaceId, refreshRecipes, refreshMembers, preSelectedRecipeId])
 
   const activeRecipes = useMemo(
     () => recipes.filter((r: Recipe) => (r as { status?: string }).status !== 'archived'),
@@ -64,6 +64,19 @@ export default function QuickCreateSheet({
     () => members.filter((m) => m.canAcceptTask),
     [members],
   )
+
+  // 默认选中第一项 — 提升交互便利性
+  useEffect(() => {
+    if (visible && step === 'recipe' && !selectedRecipeId && activeRecipes.length > 0) {
+      setSelectedRecipeId(activeRecipes[0].id)
+    }
+  }, [visible, step, selectedRecipeId, activeRecipes])
+
+  useEffect(() => {
+    if (visible && step === 'assignee' && !selectedAssigneeId && assignees.length > 0) {
+      setSelectedAssigneeId(assignees[0].id)
+    }
+  }, [visible, step, selectedAssigneeId, assignees])
 
   const selectedRecipe = activeRecipes.find((r) => r.id === selectedRecipeId)
 

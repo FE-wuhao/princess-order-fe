@@ -2,13 +2,13 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Button, Input, Text, View } from '@tarojs/components'
 import Taro, { useRouter } from '@tarojs/taro'
 import AsyncContainer from '@/components/async-container'
+import CompactHeader from '@/components/compact-header'
 import EmptyState from '@/components/empty-state'
 import MemberAvatar from '@/components/member-avatar'
 import Page from '@/components/page'
-import PageHero from '@/components/page-hero'
 import Pressable from '@/components/pressable'
 import SectionCard from '@/components/section-card'
-import { SkeletonCard, SkeletonHero } from '@/components/skeleton'
+import { SkeletonCard } from '@/components/skeleton'
 import { userApi, workspaceApi } from '@/services/api'
 import type { WorkspaceMemberView } from '@/services/workspace.api'
 import type { Workspace } from '@shared/types'
@@ -111,66 +111,61 @@ export default function Group() {
   return (
     <Page
       title={workspace?.name || '空间详情'}
-      description='成员、邀请码、菜谱和任务入口都收在这个空间工作台里。'
       tone='sunset'
       footer={footer}
     >
       <AsyncContainer
         loading={loading}
         data={workspace}
-        skeleton={<View><SkeletonHero /><SkeletonCard /><SkeletonCard /></View>}
+        skeleton={<View><SkeletonCard /><SkeletonCard /></View>}
         empty={<EmptyState tone='gray' title='空间不存在' description='该空间可能已被删除。' />}
       >
         {(ws) => (
           <View>
-            <PageHero
-              badge='Workspace'
-              title={ws.name}
-              description={`成员 ${members.length} 人，可用菜谱 ${activeRecipes.length} 个，可接任务成员 ${orderableMembers.length} 人。`}
+            <CompactHeader
               tone='sunset'
-              stats={
-                <View className='hero-stat-grid'>
-                  <View className='hero-stat-card'>
-                    <Text className='hero-stat-card__label'>协作成员</Text>
-                    <Text className='hero-stat-card__value'>{members.length}</Text>
-                    <Text className='hero-stat-card__hint'>按角色管理发任务和接任务权限</Text>
-                  </View>
-                  <View className='hero-stat-card'>
-                    <Text className='hero-stat-card__label'>可用菜谱</Text>
-                    <Text className='hero-stat-card__value'>{activeRecipes.length}</Text>
-                    <Text className='hero-stat-card__hint'>常做菜集中沉淀，发任务更快</Text>
-                  </View>
-                </View>
+              title={ws.name}
+              meta={
+                <>
+                  <Text className='compact-header__meta-item'>{members.length} 成员</Text>
+                  <Text className='compact-header__meta-item'>{activeRecipes.length} 菜谱</Text>
+                  <Text className='compact-header__meta-item'>{orderableMembers.length} 人可接任务</Text>
+                </>
               }
             />
 
-            <SectionCard title='加入方式' description='邀请码是这个空间最重要的外部入口。'
-              actions={<Button className='app-button app-button--secondary app-button--mini' onClick={handleRefreshInviteCode}>刷新邀请码</Button>}
-              variant='accent'
+            <SectionCard
+              title='菜谱库'
+              actions={<Button className='app-button app-button--primary app-button--mini' onClick={() => Taro.navigateTo({ url: `/pages/recipe-form/index?workspaceId=${workspaceId}` })}>新建菜谱</Button>}
+              meta={`${activeRecipes.length} 个可用`}
+              variant='soft'
             >
-              <View className='feature-list-card feature-list-card--amber'>
-                <Text className='feature-list-card__meta'>Invite Code</Text>
-                <Text className='page-hero__title'>{ws.inviteCode || '暂未生成'}</Text>
-                <Text className='feature-list-card__description'>
-                  {ws.inviteExpiredAt ? `有效期至 ${formatInviteExpiry(ws.inviteExpiredAt)}` : '刷新一次就会生成新的邀请码'}
-                </Text>
-                <View className='mt-3'>
-                  <Button className='app-button app-button--ghost app-button--mini' onClick={async () => {
-                    if (!ws.inviteCode) { Taro.showToast({ title: '暂无邀请码', icon: 'none' }); return }
-                    try { await Taro.setClipboardData({ data: ws.inviteCode }); Taro.showToast({ title: '已复制', icon: 'success' }) }
-                    catch (e) { showErrorToast(e, '复制失败') }
-                  }}>复制邀请码</Button>
+              {activeRecipes.length > 0 ? (
+                <View>
+                  {activeRecipes.map((recipe) => (
+                    <Pressable key={recipe.id} onClick={() => handleRecipeClick(recipe.id)}>
+                      <View className='feature-list-card feature-list-card--sky'>
+                        <Text className='feature-list-card__title'>{recipe.name}</Text>
+                        {recipe.description ? (
+                          <Text className='feature-list-card__description'>{recipe.description}</Text>
+                        ) : null}
+                      </View>
+                    </Pressable>
+                  ))}
                 </View>
-              </View>
+              ) : (
+                <EmptyState tone='amber' title='暂无菜谱' description='建议先补一个常做菜，再发起任务。' />
+              )}
             </SectionCard>
 
-            <SectionCard title='成员与角色' description='展示头像、空间备注和角色权限。'
+            <SectionCard
+              title='成员与角色'
               actions={<Button className='app-button app-button--ghost app-button--mini' onClick={() => Taro.navigateTo({ url: `/pages/tag/index?workspaceId=${workspaceId}` })}>称谓模板</Button>}
+              meta={`${members.length} 人`}
             >
               {currentUserId ? (
                 <View className='feature-list-card feature-list-card--sky mb-3'>
                   <Text className='feature-list-card__title'>我在本空间的称呼</Text>
-                  <Text className='feature-list-card__description'>只影响当前空间里的展示，例如"管家""小厨"。</Text>
                   <Input className='form-control form-control--on-tint mt-3' maxlength={50} confirmType='done' placeholder='可选，留空则显示昵称'
                     value={myRemarkDraft} onConfirm={handleSaveMyRemark} onInput={(e) => setMyRemarkDraft(e.detail.value)} />
                   <View className='mt-3'>
@@ -194,10 +189,6 @@ export default function Group() {
                           </View>
                           <Text className='tool-pill'>{member.displayRole ? roleLabelMap[member.displayRole] : '未定义'}</Text>
                         </View>
-                        <Text className='feature-list-card__description'>
-                          {member.canCreateTask ? '可发任务' : '不可发任务'} / {member.canAcceptTask ? '可接任务' : '不可接任务'}
-                        </Text>
-                        <Text className='feature-list-card__meta'>点击调整角色、权限和成员备注</Text>
                       </View>
                     </Pressable>
                   )
@@ -205,25 +196,25 @@ export default function Group() {
               </View>
             </SectionCard>
 
-            <SectionCard title='菜谱库' description='让菜谱区域更像内容资产库。'
-              actions={<Button className='app-button app-button--primary app-button--mini' onClick={() => Taro.navigateTo({ url: `/pages/recipe-form/index?workspaceId=${workspaceId}` })}>新建菜谱</Button>}
-              meta={`${activeRecipes.length} 个可用`} variant='soft'
+            <SectionCard
+              title='邀请码'
+              actions={<Button className='app-button app-button--secondary app-button--mini' onClick={handleRefreshInviteCode}>刷新</Button>}
+              variant='accent'
             >
-              {activeRecipes.length > 0 ? (
-                <View>
-                  {activeRecipes.map((recipe) => (
-                    <Pressable key={recipe.id} onClick={() => handleRecipeClick(recipe.id)}>
-                      <View className='feature-list-card feature-list-card--sky'>
-                        <Text className='feature-list-card__title'>{recipe.name}</Text>
-                        <Text className='feature-list-card__description'>{recipe.description || '进入查看做法、食材和 AI 补全结果'}</Text>
-                        <Text className='feature-list-card__meta'>点进详情继续编辑和发起任务</Text>
-                      </View>
-                    </Pressable>
-                  ))}
+              <View className='feature-list-card feature-list-card--amber'>
+                <Text className='feature-list-card__meta'>Invite Code</Text>
+                <Text className='page-hero__title'>{ws.inviteCode || '暂未生成'}</Text>
+                <Text className='feature-list-card__description'>
+                  {ws.inviteExpiredAt ? `有效期至 ${formatInviteExpiry(ws.inviteExpiredAt)}` : '刷新一次就会生成新的邀请码'}
+                </Text>
+                <View className='mt-3'>
+                  <Button className='app-button app-button--ghost app-button--mini' onClick={async () => {
+                    if (!ws.inviteCode) { Taro.showToast({ title: '暂无邀请码', icon: 'none' }); return }
+                    try { await Taro.setClipboardData({ data: ws.inviteCode }); Taro.showToast({ title: '已复制', icon: 'success' }) }
+                    catch (e) { showErrorToast(e, '复制失败') }
+                  }}>复制邀请码</Button>
                 </View>
-              ) : (
-                <EmptyState tone='amber' title='暂无菜谱' description='建议先补一个常做菜，再发起任务。' />
-              )}
+              </View>
             </SectionCard>
           </View>
         )}

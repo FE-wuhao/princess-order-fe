@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { Button, Input, Text, View } from '@tarojs/components'
 import Taro from '@tarojs/taro'
 import FormField from '@/components/form-field'
-import PageHero from '@/components/page-hero'
 import SectionCard from '@/components/section-card'
 import { APP_VERSION } from '@/config/app-version'
 import { accountLogin, accountRegister, checkAuth } from '@/utils/auth'
@@ -61,14 +60,9 @@ export default function LoginPage() {
       style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}
     >
       <View className='login-page__content'>
-        <PageHero
-          badge='Welcome'
-          title='公主请点餐吧'
-          description={mode === 'login' ? '用熟悉的账号重新回到你的小厨房。' : '先创建一个账号，再去建立属于你们的家庭空间。'}
-          tone='sky'
-        />
+        <Text className='login-brand'>公主请点餐吧</Text>
 
-        <SectionCard title={mode === 'login' ? '登录' : '注册'} variant='accent'>
+        <SectionCard variant='accent'>
           <FormField label='用户名' error={errors.username}>
             <Input
               className='form-control form-control--on-tint'
@@ -114,3 +108,4 @@ export default function LoginPage() {
     </View>
   )
 }
+

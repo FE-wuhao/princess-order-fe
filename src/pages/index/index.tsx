@@ -181,60 +181,25 @@ export default function Index() {
         </Pressable>
       </View>
 
-      <View className='dashboard-masthead'>
-        <Text className='dashboard-masthead__kicker'>PRINCESS ORDER · TODAY</Text>
-        <Text className='dashboard-masthead__title'>今天想吃什么？</Text>
+      <View className='dashboard-masthead dashboard-masthead--compact'>
         <Text className='dashboard-masthead__copy'>
           {currentWorkspace
             ? `${currentWorkspace.name} · ${pendingTotal > 0 ? `${pendingTotal} 件事正在厨房里发生` : '厨房清闲，适合点一道喜欢的菜'}`
             : '创建一个共同厨房，把想吃的认真交给重要的人。'}
         </Text>
-        <View className='dashboard-masthead__rule'>
-          <View className='dashboard-masthead__rule-line' />
-          <Text className='dashboard-masthead__rule-mark'>PO</Text>
-          <View className='dashboard-masthead__rule-line' />
-        </View>
       </View>
 
-      <View className='dashboard-section-heading'>
-        <Text className='dashboard-section-heading__index'>01</Text>
-        <View>
-          <Text className='dashboard-section-heading__title'>今日进度</Text>
-          <Text className='dashboard-section-heading__caption'>从发起到上桌，一眼看清</Text>
-        </View>
-      </View>
-      <View className='dashboard-stat-grid'>
+      <View className='dashboard-stat-strip'>
         {STATUS_BADGES.map((badge) => (
           <Pressable key={badge.key} onClick={() => handleStatusFilter(badge.key)}>
-            <View className={`dashboard-stat-card dashboard-stat-card--${badge.key}`}>
-              <Text className='dashboard-stat-card__step'>{badge.short}</Text>
-              <Text className='dashboard-stat-card__count'>{statusCounts[badge.key] || 0}</Text>
-              <Text className='dashboard-stat-card__label'>{badge.label}</Text>
+            <View className={`dashboard-stat-chip dashboard-stat-chip--${badge.key}`}>
+              <Text className='dashboard-stat-chip__count'>{statusCounts[badge.key] || 0}</Text>
+              <Text className='dashboard-stat-chip__label'>{badge.label}</Text>
             </View>
           </Pressable>
         ))}
       </View>
 
-      <View className='dashboard-actions'>
-        <Button className='dashboard-action dashboard-action--primary' onClick={() => Taro.switchTab({ url: '/pages/recipes/index' })}>
-          <Text className='dashboard-action__eyebrow'>MENU</Text>
-          <Text className='dashboard-action__title'>翻翻家里的菜谱</Text>
-          <Text className='dashboard-action__arrow'>→</Text>
-        </Button>
-        <Button className='dashboard-action' onClick={handleViewAllTasks}>
-          <Text className='dashboard-action__eyebrow'>ORDERS</Text>
-          <Text className='dashboard-action__title'>看看全部任务</Text>
-          <Text className='dashboard-action__arrow'>→</Text>
-        </Button>
-      </View>
-
-      <View className='dashboard-section-heading dashboard-section-heading--activity'>
-        <Text className='dashboard-section-heading__index'>02</Text>
-        <View>
-          <Text className='dashboard-section-heading__title'>最近动态</Text>
-          <Text className='dashboard-section-heading__caption'>共同厨房的最新小事</Text>
-        </View>
-      </View>
       <SectionCard
         title={recentTasks.length > 0 ? `最近 ${recentTasks.length} 条任务` : '还没有任务'}
         actions={

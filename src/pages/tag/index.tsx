@@ -4,9 +4,7 @@ import Taro, { useDidShow, useRouter } from '@tarojs/taro'
 import AsyncContainer from '@/components/async-container'
 import EmptyState from '@/components/empty-state'
 import Page from '@/components/page'
-import PageHero from '@/components/page-hero'
 import Pressable from '@/components/pressable'
-import SectionCard from '@/components/section-card'
 import { SkeletonCard } from '@/components/skeleton'
 import StatusChip from '@/components/status-chip'
 import { useRoleTemplateStore } from '@/stores/useRoleTemplateStore'
@@ -74,55 +72,42 @@ export default function Tag() {
     rt === 'requester' ? 'warning' : rt === 'cook' ? 'accent' : rt === 'both' ? 'success' : ('neutral' as const)
 
   return (
-    <Page title='称谓模板' description='沉淀空间内常用的身份叫法。'>
-      <PageHero
-        badge='Role Templates' title='称谓模板'
-        description='称谓模板用于沉淀空间里的常用身份叫法，成员页会直接引用它。'
-        tone='brand'
-        stats={
-          <View className='hero-stat-grid'>
-            <View className='hero-stat-card'>
-              <Text className='hero-stat-card__label'>模板数量</Text>
-              <Text className='hero-stat-card__value'>{roleTemplates.length}</Text>
-              <Text className='hero-stat-card__hint'>按空间维度维护</Text>
-            </View>
-            <View className='hero-stat-card'>
-              <Text className='hero-stat-card__label'>当前空间</Text>
-              <Text className='hero-stat-card__value'>{workspaceId ? '已定位' : '未知'}</Text>
-              <Text className='hero-stat-card__hint'>从空间页进入更准确</Text>
-            </View>
-          </View>
-        }
-        actions={<Button className='app-button app-button--primary' onClick={handleCreate}>新建模板</Button>}
-      />
+    <Page title='称谓模板'>
+      <View className='page-toolbar'>
+        <View className='page-toolbar__main'>
+          <Text className='page-toolbar__title'>称谓模板</Text>
+          <Text className='page-toolbar__subtitle'>{roleTemplates.length} 条模板</Text>
+        </View>
+        <Button className='app-button app-button--primary app-button--mini' onClick={handleCreate}>
+          新建模板
+        </Button>
+      </View>
 
-      <SectionCard title='模板列表' description='双角色适合既能发任务也能接任务的人。' meta={`${roleTemplates.length} 条`} variant='soft'>
-        <AsyncContainer
-          loading={loading && roleTemplates.length === 0}
-          data={roleTemplates}
-          skeleton={<View><SkeletonCard /><SkeletonCard /></View>}
-          empty={<EmptyState tone='gray' title='暂无称谓模板' description='先从这里沉淀一套常用称谓，成员页会更好配置。' />}
-        >
-          {(templates) => (
-            <View>
-              {templates.map((tpl) => (
-                <View key={tpl.id} className='feature-list-card'>
-                  <View className='flex items-center justify-between'>
-                    <Text className='feature-list-card__title'>{tpl.name}</Text>
-                    <StatusChip label={roleLabel(tpl.roleType)} tone={roleTone(tpl.roleType)} />
-                  </View>
-                  <Text className='feature-list-card__meta'>{tpl.isDefault ? '默认模板' : '自定义模板'}</Text>
-                  {!tpl.isDefault ? (
-                    <View className='mt-3'>
-                      <Button className='app-button app-button--ghost app-button--mini' onClick={() => handleDelete(tpl)}>删除模板</Button>
-                    </View>
-                  ) : null}
+      <AsyncContainer
+        loading={loading && roleTemplates.length === 0}
+        data={roleTemplates}
+        skeleton={<View><SkeletonCard /><SkeletonCard /></View>}
+        empty={<EmptyState tone='gray' title='暂无称谓模板' description='先沉淀一套常用称谓，成员页会更好配置。' />}
+      >
+        {(templates) => (
+          <View>
+            {templates.map((tpl) => (
+              <View key={tpl.id} className='feature-list-card'>
+                <View className='flex items-center justify-between'>
+                  <Text className='feature-list-card__title'>{tpl.name}</Text>
+                  <StatusChip label={roleLabel(tpl.roleType)} tone={roleTone(tpl.roleType)} />
                 </View>
-              ))}
-            </View>
-          )}
-        </AsyncContainer>
-      </SectionCard>
+                <Text className='feature-list-card__meta'>{tpl.isDefault ? '默认模板' : '自定义模板'}</Text>
+                {!tpl.isDefault ? (
+                  <View className='mt-3'>
+                    <Button className='app-button app-button--ghost app-button--mini' onClick={() => handleDelete(tpl)}>删除模板</Button>
+                  </View>
+                ) : null}
+              </View>
+            ))}
+          </View>
+        )}
+      </AsyncContainer>
     </Page>
   )
 }

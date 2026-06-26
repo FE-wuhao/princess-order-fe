@@ -12,11 +12,14 @@
 
 .qcs-sheet {
   width: 100%;
+  max-width: 100%;
   max-height: 70vh;
   background: var(--ui-bg-elevated, #ffffff);
   border-radius: 20px 20px 0 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
   animation: slideUp 0.3s ease both;
 }
 
@@ -107,6 +110,8 @@
   flex: 1;
   max-height: 40vh;
   padding: 0 16px;
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .qcs-item {
@@ -118,6 +123,8 @@
   border-radius: 14px;
   border: 1.5px solid transparent;
   background: var(--ui-bg-muted, #fff2ef);
+  box-sizing: border-box;
+  width: 100%;
   transition: all 0.15s ease;
 }
 

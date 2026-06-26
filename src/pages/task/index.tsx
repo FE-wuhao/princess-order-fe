@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Button, Text, View } from '@tarojs/components'
 import Taro, { useRouter } from '@tarojs/taro'
-import BottomActionBar from '@/components/bottom-action-bar'
 import EmptyState from '@/components/empty-state'
+import Page from '@/components/page'
 import SectionCard from '@/components/section-card'
 import { SkeletonCard } from '@/components/skeleton'
 import StatusChip from '@/components/status-chip'
-import SubPageHeader from '@/components/sub-page-header'
 import {
   NotificationStatus,
   notificationStatusMetaMap,
@@ -256,29 +255,53 @@ export default function Task() {
 
   if (loading) {
     return (
-      <View className='page-shell page-shell--sky px-4 py-5'>
+      <Page title='任务详情' tone='sky'>
         <SkeletonCard />
         <SkeletonCard />
         <SkeletonCard />
-      </View>
+      </Page>
     )
   }
 
   if (!task) {
     return (
-      <View className='page-shell page-shell--sky px-4 py-5'>
+      <Page title='任务详情' tone='sky'>
         <EmptyState tone='gray' title='任务不存在' description='该任务可能已被删除。' />
-      </View>
+      </Page>
     )
   }
 
   const orderStatusMeta = orderStatusMetaMap[task.status]
   const taskTitle = task.recipeSnapshot?.recipeName || task.recipe?.name || `任务 #${task.id}`
   const workspaceName = task.workspace?.name || '未命名空间'
+  const footer = actionButtons.length > 0 ? (
+    <View className='action-stack'>
+      {actionButtons.map((action) => (
+        <Button
+          key={action.key}
+          className={`app-button ${
+            action.type === 'primary'
+              ? 'app-button--primary'
+              : action.type === 'warn'
+              ? 'app-button--warn'
+              : 'app-button--ghost'
+          }`}
+          disabled={acting}
+          onClick={action.onClick}
+        >
+          {action.text}
+        </Button>
+      ))}
+    </View>
+  ) : null
 
   return (
-    <View className='page-shell page-shell--sky px-4 py-5 pb-32'>
-      <SubPageHeader title='任务详情' description='任务状态、时间线和通知记录都在这里。' />
+    <Page
+      title='任务详情'
+      description='任务状态、时间线和通知记录都在这里。'
+      tone='sky'
+      footer={footer}
+    >
       <View className='section-card section-card--accent'>
         <View className='mb-3 flex items-center justify-between'>
           <Text className='text-xl font-bold text-gray-900'>{taskTitle}</Text>
@@ -400,29 +423,6 @@ export default function Task() {
           />
         )}
       </SectionCard>
-
-      {actionButtons.length > 0 ? (
-        <BottomActionBar>
-          <View className='action-stack'>
-            {actionButtons.map((action) => (
-              <Button
-                key={action.key}
-                className={`app-button ${
-                  action.type === 'primary'
-                    ? 'app-button--primary'
-                    : action.type === 'warn'
-                    ? 'app-button--warn'
-                    : 'app-button--ghost'
-                }`}
-                disabled={acting}
-                onClick={action.onClick}
-              >
-                {action.text}
-              </Button>
-            ))}
-          </View>
-        </BottomActionBar>
-      ) : null}
-    </View>
+    </Page>
   )
 }

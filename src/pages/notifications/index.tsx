@@ -1,10 +1,10 @@
 import { useEffect } from 'react'
 import { Text, View } from '@tarojs/components'
 import EmptyState from '@/components/empty-state'
+import Page from '@/components/page'
 import SectionCard from '@/components/section-card'
 import { SkeletonCard } from '@/components/skeleton'
 import StatusChip from '@/components/status-chip'
-import SubPageHeader from '@/components/sub-page-header'
 import { NotificationStatus, notificationStatusMetaMap, notificationTitleMap } from '@/constants/ui'
 import { useNotificationStore } from '@/stores/useNotificationStore'
 import type { NotificationLog } from '@shared/types'
@@ -20,9 +20,7 @@ export default function NotificationsPage() {
   }, [loadNotifications])
 
   return (
-    <View className='page-shell page-shell--sky px-4 py-5'>
-      <SubPageHeader title='通知记录' description='发单、接单、完成和失败通知，统一在这里查看。' />
-
+    <Page title='通知记录' description='发单、接单、完成和失败通知，统一在这里查看。' tone='sky'>
       <SectionCard title='最近通知' description='点击首页的通知入口也会来到这里。' variant='soft'>
         {loading ? (
           <View><SkeletonCard /><SkeletonCard /><SkeletonCard /></View>
@@ -49,6 +47,6 @@ export default function NotificationsPage() {
           </View>
         )}
       </SectionCard>
-    </View>
+    </Page>
   )
 }

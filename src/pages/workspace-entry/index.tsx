@@ -3,6 +3,7 @@ import { Button, Text, View } from '@tarojs/components'
 import Taro from '@tarojs/taro'
 import InputDialog from '@/components/input-dialog'
 import EmptyState from '@/components/empty-state'
+import Page from '@/components/page'
 import PageHero from '@/components/page-hero'
 import SectionCard from '@/components/section-card'
 import { SkeletonHero } from '@/components/skeleton'
@@ -75,14 +76,14 @@ export default function WorkspaceEntryPage() {
 
   if (loading) {
     return (
-      <View className='page-shell page-shell--sunset px-4 py-5'>
+      <Page tone='sunset' showHeader={false}>
         <SkeletonHero />
-      </View>
+      </Page>
     )
   }
 
   return (
-    <View className='page-shell page-shell--sunset px-4 py-5 animate-fade-in-up'>
+    <Page tone='sunset' showHeader={false} className='animate-fade-in-up'>
       <PageHero
         badge='Workspace Entry'
         title='先加入一个空间，再开始点餐协作'
@@ -108,6 +109,6 @@ export default function WorkspaceEntryPage() {
         placeholder='例如：GRBQ7X' confirmText='加入' loading={submitting}
         onChange={(value: string) => setDialogValue(value.toUpperCase())}
         onCancel={() => { setDialogMode(null); setDialogValue('') }} onConfirm={handleJoinWorkspace} />
-    </View>
+    </Page>
   )
 }

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Button, Text, View } from '@tarojs/components'
 import Taro, { useDidShow } from '@tarojs/taro'
 import MemberAvatar from '@/components/member-avatar'
+import Page from '@/components/page'
 import Pressable from '@/components/pressable'
 import SectionCard from '@/components/section-card'
 import { SkeletonCard } from '@/components/skeleton'
@@ -61,10 +62,10 @@ export default function Profile() {
 
   if (loading || !user) {
     return (
-      <View className='page-shell page-shell--sky px-4 py-5'>
+      <Page tone='sky' showHeader={false} contentClassName='pb-28'>
         <SkeletonCard />
         <SkeletonCard />
-      </View>
+      </Page>
     )
   }
 
@@ -78,7 +79,7 @@ export default function Profile() {
   }
 
   return (
-    <View className='page-shell page-shell--sky px-4 py-5'>
+    <Page tone='sky' showHeader={false} contentClassName='pb-28'>
       <SectionCard title='我的账号' description='资料维护、通知查看和退出登录都收在这里。' variant='accent'>
         <View className='profile-summary'>
           <View
@@ -128,6 +129,6 @@ export default function Profile() {
         </Button>
       </View>
       {isH5 ? <TabBarPlus activeKey='profile' /> : null}
-    </View>
+    </Page>
   )
 }

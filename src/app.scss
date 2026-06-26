@@ -308,7 +308,7 @@ taro-button-core.profile-avatar-trigger::after {
 /* H5：覆盖 Taro 默认按钮样式 */
 taro-button-core.app-button,
 .app-button {
-  width: 100%;
+  width: auto;
   box-sizing: border-box;
 }
 

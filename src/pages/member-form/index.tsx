@@ -2,13 +2,12 @@ import { useCallback, useEffect, useState } from 'react'
 import Taro, { useDidShow, useRouter } from '@tarojs/taro'
 import { Button, Input, Picker, Switch, Text, View } from '@tarojs/components'
 import AsyncContainer from '@/components/async-container'
-import BottomActionBar from '@/components/bottom-action-bar'
 import FormField from '@/components/form-field'
 import MemberAvatar from '@/components/member-avatar'
+import Page from '@/components/page'
 import PageHero from '@/components/page-hero'
 import SectionCard from '@/components/section-card'
 import { SkeletonCard } from '@/components/skeleton'
-import SubPageHeader from '@/components/sub-page-header'
 import { workspaceApi } from '@/services/api'
 import type { WorkspaceMemberView } from '@/services/workspace.api'
 import type { Workspace } from '@shared/types'
@@ -105,8 +104,19 @@ export default function MemberForm() {
     finally { setSaving(false) }
   }
 
+  const footer = (
+    <Button className='app-button app-button--primary' loading={saving} disabled={saving} onClick={handleSave}>
+      保存成员设置
+    </Button>
+  )
+
   return (
-    <View className='page-shell page-shell--sunset px-4 py-5 pb-32'>
+    <Page
+      title='成员设置'
+      description='调整空间内备注、角色、状态和权限。'
+      tone='sunset'
+      footer={footer}
+    >
       <AsyncContainer
         loading={loading}
         data={member}
@@ -118,7 +128,6 @@ export default function MemberForm() {
           const subtitle = getMemberSubtitle(m)
           return (
             <View>
-              <SubPageHeader title='成员设置' description='调整空间内备注、角色、状态和权限。' />
               <PageHero badge='Member Setting' title={displayName}
                 description={`${workspace?.name || '当前空间'} · 成员 ID ${m.id}`} tone='sunset' />
 
@@ -177,21 +186,13 @@ export default function MemberForm() {
           )
         }}
       </AsyncContainer>
-
-      <BottomActionBar>
-        <Button className='app-button app-button--primary' loading={saving} disabled={saving} onClick={handleSave}>
-          保存成员设置
-        </Button>
-      </BottomActionBar>
-    </View>
+    </Page>
   )
 }
 
 // 内联占位组件
 function EmptyStatePlaceholder() {
   return (
-    <View className='page-shell page-shell--sunset px-4 py-5'>
-      <Text className='block text-center text-gray-500'>成员不存在</Text>
-    </View>
+    <Text className='block text-center text-gray-500'>成员不存在</Text>
   )
 }

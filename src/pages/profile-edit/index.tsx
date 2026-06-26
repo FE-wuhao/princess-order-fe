@@ -3,10 +3,10 @@ import { Button, Text, View } from '@tarojs/components'
 import Taro from '@tarojs/taro'
 import InputDialog from '@/components/input-dialog'
 import MemberAvatar from '@/components/member-avatar'
+import Page from '@/components/page'
 import Pressable from '@/components/pressable'
 import SectionCard from '@/components/section-card'
 import { SkeletonCard } from '@/components/skeleton'
-import SubPageHeader from '@/components/sub-page-header'
 import { userApi } from '@/services/api'
 import { showErrorToast } from '@/utils/error'
 import { isH5 } from '@/utils/platform'
@@ -67,17 +67,15 @@ export default function ProfileEditPage() {
 
   if (loading || !user) {
     return (
-      <View className='page-shell page-shell--sky px-4 py-5'>
+      <Page title='我的资料' tone='sky'>
         <SkeletonCard />
         <SkeletonCard />
-      </View>
+      </Page>
     )
   }
 
   return (
-    <View className='page-shell page-shell--sky px-4 py-5 animate-fade-in-up'>
-      <SubPageHeader title='我的资料' description='头像和昵称会同步到空间成员列表和任务详情。' />
-
+    <Page title='我的资料' description='头像和昵称会同步到空间成员列表和任务详情。' tone='sky' className='animate-fade-in-up'>
       <SectionCard title='账号信息' description='点击头像更新图片，点击昵称修改称呼。' variant='accent'>
         <View className='profile-row'>
           <Text className='profile-row__label'>头像</Text>
@@ -121,6 +119,6 @@ export default function ProfileEditPage() {
         onCancel={() => setNicknameDialogVisible(false)}
         onConfirm={handleSaveNickname}
       />
-    </View>
+    </Page>
   )
 }

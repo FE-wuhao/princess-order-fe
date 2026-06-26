@@ -2,14 +2,13 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Button, Input, Text, View } from '@tarojs/components'
 import Taro, { useRouter } from '@tarojs/taro'
 import AsyncContainer from '@/components/async-container'
-import BottomActionBar from '@/components/bottom-action-bar'
 import EmptyState from '@/components/empty-state'
 import MemberAvatar from '@/components/member-avatar'
+import Page from '@/components/page'
 import PageHero from '@/components/page-hero'
 import Pressable from '@/components/pressable'
 import SectionCard from '@/components/section-card'
 import { SkeletonCard, SkeletonHero } from '@/components/skeleton'
-import SubPageHeader from '@/components/sub-page-header'
 import { userApi, workspaceApi } from '@/services/api'
 import type { WorkspaceMemberView } from '@/services/workspace.api'
 import type { Workspace } from '@shared/types'
@@ -101,8 +100,21 @@ export default function Group() {
     } catch (error) { Taro.hideLoading(); showErrorToast(error, '生成失败') }
   }
 
+  const footer = (
+    <Button className='app-button app-button--primary'
+      disabled={activeRecipes.length === 0 || orderableMembers.length === 0}
+      onClick={() => Taro.navigateTo({ url: `/pages/order/index?workspaceId=${workspaceId}` })}>
+      发起任务
+    </Button>
+  )
+
   return (
-    <View className='page-shell page-shell--sunset px-4 py-5 pb-32'>
+    <Page
+      title={workspace?.name || '空间详情'}
+      description='成员、邀请码、菜谱和任务入口都收在这个空间工作台里。'
+      tone='sunset'
+      footer={footer}
+    >
       <AsyncContainer
         loading={loading}
         data={workspace}
@@ -111,7 +123,6 @@ export default function Group() {
       >
         {(ws) => (
           <View>
-            <SubPageHeader title={ws.name} description='成员、邀请码、菜谱和任务入口都收在这个空间工作台里。' />
             <PageHero
               badge='Workspace'
               title={ws.name}
@@ -217,14 +228,6 @@ export default function Group() {
           </View>
         )}
       </AsyncContainer>
-
-      <BottomActionBar>
-        <Button className='app-button app-button--primary'
-          disabled={activeRecipes.length === 0 || orderableMembers.length === 0}
-          onClick={() => Taro.navigateTo({ url: `/pages/order/index?workspaceId=${workspaceId}` })}>
-          发起任务
-        </Button>
-      </BottomActionBar>
-    </View>
+    </Page>
   )
 }

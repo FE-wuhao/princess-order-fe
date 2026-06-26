@@ -3,6 +3,7 @@ import { Button, Text, View } from '@tarojs/components'
 import Taro, { useDidShow } from '@tarojs/taro'
 import AsyncContainer from '@/components/async-container'
 import EmptyState from '@/components/empty-state'
+import Page from '@/components/page'
 import PageHero from '@/components/page-hero'
 import Pressable from '@/components/pressable'
 import TabBarPlus from '@/components/tab-bar-plus'
@@ -90,7 +91,7 @@ export default function RecipesPage() {
   }
 
   return (
-    <View className='page-shell page-shell--sunset px-4 py-5 pb-8'>
+    <Page tone='sunset' showHeader={false} contentClassName='pb-28'>
       <PageHero
         badge='OUR MENU'
         title='家里的常备菜单'
@@ -159,6 +160,6 @@ export default function RecipesPage() {
       </SectionCard>
 
       {isH5 ? <TabBarPlus activeKey='recipes' /> : null}
-    </View>
+    </Page>
   )
 }

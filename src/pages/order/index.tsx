@@ -2,14 +2,13 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Button, Text, View } from '@tarojs/components'
 import Taro, { useDidShow, useRouter } from '@tarojs/taro'
 import AsyncContainer from '@/components/async-container'
-import BottomActionBar from '@/components/bottom-action-bar'
 import EmptyState from '@/components/empty-state'
 import MemberAvatar from '@/components/member-avatar'
+import Page from '@/components/page'
 import PageHero from '@/components/page-hero'
 import Pressable from '@/components/pressable'
 import SectionCard from '@/components/section-card'
 import { SkeletonCard } from '@/components/skeleton'
-import SubPageHeader from '@/components/sub-page-header'
 import { useMemberStore } from '@/stores/useMemberStore'
 import { useRecipeStore } from '@/stores/useRecipeStore'
 import { useTaskStore } from '@/stores/useTaskStore'
@@ -94,10 +93,19 @@ export default function Order() {
 
   const assignees = useMemo(() => members.filter((m) => m.canAcceptTask), [members])
   const loading = recipesLoading || membersLoading
+  const footer = (
+    <Button
+      className='app-button app-button--primary'
+      disabled={!selectedRecipeId || !selectedAssigneeId || submitting}
+      loading={submitting}
+      onClick={handleSubmit}
+    >
+      创建任务
+    </Button>
+  )
 
   return (
-    <View className='page-shell page-shell--sunset px-4 py-5 pb-32'>
-      <SubPageHeader title='发起任务' description='先选菜谱，再指定执行人。' />
+    <Page title='发起任务' description='先选菜谱，再指定执行人。' tone='sunset' footer={footer}>
       <PageHero
         badge='NEW ORDER'
         title='认真地点一道菜'
@@ -185,17 +193,6 @@ export default function Order() {
           )}
         </AsyncContainer>
       </SectionCard>
-
-      <BottomActionBar>
-        <Button
-          className='app-button app-button--primary'
-          disabled={!selectedRecipeId || !selectedAssigneeId || submitting}
-          loading={submitting}
-          onClick={handleSubmit}
-        >
-          创建任务
-        </Button>
-      </BottomActionBar>
-    </View>
+    </Page>
   )
 }

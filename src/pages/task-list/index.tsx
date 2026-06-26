@@ -3,6 +3,7 @@ import { Button, Text, View } from '@tarojs/components'
 import Taro, { useDidShow } from '@tarojs/taro'
 import AsyncContainer from '@/components/async-container'
 import EmptyState from '@/components/empty-state'
+import Page from '@/components/page'
 import PageHero from '@/components/page-hero'
 import Pressable from '@/components/pressable'
 import SectionCard from '@/components/section-card'
@@ -124,7 +125,7 @@ export default function TaskList() {
   }
 
   return (
-    <View className='page-shell page-shell--sky px-4 py-5 pb-8'>
+    <Page title='任务面板' tone='sky'>
       <PageHero
         badge='Task Board'
         title='任务进度一眼看清'
@@ -209,6 +210,6 @@ export default function TaskList() {
           </View>
         )}
       </AsyncContainer>
-    </View>
+    </Page>
   )
 }

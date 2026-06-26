@@ -3,12 +3,12 @@ import { View, Text, Button } from '@tarojs/components'
 import Taro, { useDidShow, useRouter } from '@tarojs/taro'
 import AsyncContainer from '@/components/async-container'
 import EmptyState from '@/components/empty-state'
+import Page from '@/components/page'
 import PageHero from '@/components/page-hero'
 import Pressable from '@/components/pressable'
 import SectionCard from '@/components/section-card'
 import { SkeletonCard } from '@/components/skeleton'
 import StatusChip from '@/components/status-chip'
-import SubPageHeader from '@/components/sub-page-header'
 import { useRoleTemplateStore } from '@/stores/useRoleTemplateStore'
 import { tagApi } from '@/services/api'
 import { showErrorToast } from '@/utils/error'
@@ -74,8 +74,7 @@ export default function Tag() {
     rt === 'requester' ? 'warning' : rt === 'cook' ? 'accent' : rt === 'both' ? 'success' : ('neutral' as const)
 
   return (
-    <View className='page-shell px-4 py-5'>
-      <SubPageHeader title='称谓模板' description='沉淀空间内常用的身份叫法。' />
+    <Page title='称谓模板' description='沉淀空间内常用的身份叫法。'>
       <PageHero
         badge='Role Templates' title='称谓模板'
         description='称谓模板用于沉淀空间里的常用身份叫法，成员页会直接引用它。'
@@ -124,6 +123,6 @@ export default function Tag() {
           )}
         </AsyncContainer>
       </SectionCard>
-    </View>
+    </Page>
   )
 }

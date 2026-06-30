@@ -1,0 +1,194 @@
+.task-status-card {
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 16px;
+  padding: 18px;
+  border: 1px solid rgba(50, 31, 37, 0.1);
+  border-radius: 14px;
+  background: #fffdf8;
+  box-shadow: var(--ui-shadow-card);
+}
+
+.task-status-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 4px;
+  height: 100%;
+  background: var(--ui-brand-500);
+}
+
+.task-status-card--warning::before {
+  background: var(--ui-warning-text);
+}
+
+.task-status-card--info::before,
+.task-status-card--accent::before {
+  background: var(--ui-accent-500);
+}
+
+.task-status-card--success::before {
+  background: var(--ui-success-text);
+}
+
+.task-status-card--danger::before {
+  background: var(--ui-danger-text);
+}
+
+.task-status-card--neutral::before {
+  background: var(--ui-neutral-text);
+}
+
+.task-status-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.task-status-card__title-group {
+  flex: 1;
+  min-width: 0;
+}
+
+.task-status-card__eyebrow {
+  display: block;
+  color: var(--ui-text-secondary);
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.task-status-card__title {
+  display: block;
+  margin-top: 4px;
+  color: var(--ui-text-primary);
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 800;
+}
+
+.task-status-card__description {
+  display: block;
+  margin-top: 10px;
+  color: var(--ui-text-secondary);
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.task-status-card__meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.task-status-card__meta {
+  display: block;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--ui-bg-soft);
+  color: var(--ui-text-secondary);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.task-status-card__next,
+.task-status-card__event {
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px solid rgba(50, 31, 37, 0.08);
+  border-radius: 10px;
+  background: rgba(251, 247, 239, 0.72);
+}
+
+.task-status-card__event {
+  margin-top: 10px;
+}
+
+.task-status-card__next-label,
+.task-status-card__event-label {
+  display: block;
+  color: var(--ui-text-tertiary);
+  font-size: 11px;
+  line-height: 15px;
+}
+
+.task-status-card__next-text,
+.task-status-card__event-text {
+  display: block;
+  margin-top: 4px;
+  color: var(--ui-text-primary);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+}
+
+.task-recipe-summary {
+  padding: 12px;
+  border: 1px solid rgba(50, 31, 37, 0.08);
+  border-radius: 10px;
+  background: #fffdf8;
+}
+
+.task-recipe-summary__label {
+  display: block;
+  color: var(--ui-text-tertiary);
+  font-size: 11px;
+  line-height: 15px;
+}
+
+.task-recipe-summary__text {
+  display: block;
+  margin-top: 5px;
+  color: var(--ui-text-secondary);
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.task-step-list--spaced {
+  margin-top: 12px;
+}
+
+.task-step-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 13px 12px;
+  border: 1px solid rgba(50, 31, 37, 0.09);
+  border-radius: 10px;
+  background: #fffdf8;
+}
+
+.task-step-card + .task-step-card {
+  margin-top: 10px;
+}
+
+.task-step-card--active {
+  border-color: rgba(47, 93, 98, 0.28);
+  background: var(--ui-accent-soft);
+}
+
+.task-step-card__index {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  border: 1px solid rgba(50, 31, 37, 0.12);
+  border-radius: 999px;
+  background: var(--ui-bg-soft);
+  color: var(--ui-text-secondary);
+  font-size: 13px;
+  line-height: 28px;
+  font-weight: 700;
+}
+
+.task-step-card__text {
+  flex: 1;
+  min-width: 0;
+  color: var(--ui-text-secondary);
+  font-size: 14px;
+  line-height: 22px;
+}

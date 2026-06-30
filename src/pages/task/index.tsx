@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Button, Text, View } from '@tarojs/components'
 import Taro, { useRouter } from '@tarojs/taro'
 import EmptyState from '@/components/empty-state'
+import InputDialog from '@/components/input-dialog'
 import Page from '@/components/page'
 import SectionCard from '@/components/section-card'
 import { SkeletonCard } from '@/components/skeleton'
@@ -17,6 +18,7 @@ import { showErrorToast } from '@/utils/error'
 import { getRouteNumberParam } from '@/utils/router'
 import { requestAssigneeOrderSubscriptions } from '@/utils/subscribe-message'
 import type { User } from '@shared/types'
+import './index.scss'
 
 type TaskStatus =
   | 'created'
@@ -75,6 +77,72 @@ const eventLabelMap: Record<string, string> = {
   expired: '任务超时',
 }
 
+interface PromptDialogState {
+  visible: boolean
+  title: string
+  placeholder: string
+  value: string
+}
+
+const taskStageMap: Record<
+  TaskStatus,
+  {
+    title: string
+    description: string
+    next: string
+    cardTone: 'warning' | 'info' | 'accent' | 'success' | 'danger' | 'neutral'
+  }
+> = {
+  created: {
+    title: '等待接单响应',
+    description: '先看菜谱和步骤，再决定是否接受这次制作任务。',
+    next: '下一步：接受任务或说明拒绝原因',
+    cardTone: 'warning',
+  },
+  accepted: {
+    title: '已接单，准备开做',
+    description: '任务已经进入执行阶段，先备齐食材，再开始制作。',
+    next: '下一步：开始制作',
+    cardTone: 'info',
+  },
+  cooking: {
+    title: '正在制作中',
+    description: '页面已切换到执行台，按步骤推进并在完成后提交。',
+    next: '下一步：提交完成',
+    cardTone: 'accent',
+  },
+  completed: {
+    title: '已提交，等待确认',
+    description: '制作人已提交完成，等待发起人确认这次任务。',
+    next: '下一步：确认完成',
+    cardTone: 'success',
+  },
+  confirmed: {
+    title: '任务已完成',
+    description: '本次制作已经闭环，后续可以查看完整流转记录。',
+    next: '已归档',
+    cardTone: 'success',
+  },
+  rejected: {
+    title: '任务已拒绝',
+    description: '执行人没有接受这次任务，拒绝原因会保留在记录里。',
+    next: '无需继续处理',
+    cardTone: 'danger',
+  },
+  cancelled: {
+    title: '任务已取消',
+    description: '这次任务已经停止，取消原因会保留在记录里。',
+    next: '无需继续处理',
+    cardTone: 'neutral',
+  },
+  expired: {
+    title: '任务已超时',
+    description: '任务在有效时间内没有完成响应或流转。',
+    next: '无需继续处理',
+    cardTone: 'danger',
+  },
+}
+
 /** 状态流转映射：操作 → 预期的新状态（用于乐观更新） */
 const optimisticStatusMap: Record<string, TaskStatus> = {
   accept: 'accepted',
@@ -91,8 +159,16 @@ export default function Task() {
   const [loading, setLoading] = useState(false)
   const [acting, setActing] = useState(false)
   const [retryingLogId, setRetryingLogId] = useState<number | null>(null)
+  const [showRecipeDetail, setShowRecipeDetail] = useState(false)
   const [showTimeline, setShowTimeline] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
+  const [promptDialog, setPromptDialog] = useState<PromptDialogState>({
+    visible: false,
+    title: '',
+    placeholder: '',
+    value: '',
+  })
+  const promptResolverRef = useRef<((value: string | null) => void) | null>(null)
 
   const router = useRouter()
   const taskId = getRouteNumberParam(router.params, 'id')
@@ -122,15 +198,33 @@ export default function Task() {
   const isCreator = task?.creator?.id === currentUser?.id
   const isAssignee = task?.assignee?.id === currentUser?.id
 
-  const promptText = async (title: string, placeholderText: string) => {
-    const result = await Taro.showModal({
-      title,
-      editable: true,
-      placeholderText,
-      confirmText: '确认',
+  const closePromptDialog = (value: string | null) => {
+    promptResolverRef.current?.(value)
+    promptResolverRef.current = null
+    setPromptDialog({
+      visible: false,
+      title: '',
+      placeholder: '',
+      value: '',
     })
-    if (!result.confirm) return null
-    return result.content?.trim() || ''
+  }
+
+  const promptText = (title: string, placeholder: string) => new Promise<string | null>((resolve) => {
+    promptResolverRef.current = resolve
+    setPromptDialog({
+      visible: true,
+      title,
+      placeholder,
+      value: '',
+    })
+  })
+
+  const handlePromptCancel = () => {
+    closePromptDialog(null)
+  }
+
+  const handlePromptConfirm = () => {
+    closePromptDialog(promptDialog.value.trim())
   }
 
   /**
@@ -265,7 +359,7 @@ export default function Task() {
     if (isAssignee && task.status === 'accepted') {
       actions.push({ key: 'start', text: '开始制作', onClick: handleStart, type: 'primary' })
     }
-    if (isAssignee && ['accepted', 'cooking'].includes(task.status)) {
+    if (isAssignee && task.status === 'cooking') {
       actions.push({ key: 'complete', text: '提交完成', onClick: handleComplete, type: 'primary' })
     }
     if (isCreator && task.status === 'completed') {
@@ -297,8 +391,18 @@ export default function Task() {
   }
 
   const orderStatusMeta = orderStatusMetaMap[task.status]
+  const taskStage = taskStageMap[task.status]
   const taskTitle = task.recipeSnapshot?.recipeName || task.recipe?.name || `任务 #${task.id}`
   const workspaceName = task.workspace?.name || '未命名空间'
+  const ingredients = task.recipeSnapshot?.ingredientsJson || []
+  const steps = task.recipeSnapshot?.stepsJson || []
+  const latestEvent = task.events?.[0]
+  const recipeCountText = [
+    ingredients.length ? `${ingredients.length} 个食材` : '',
+    steps.length ? `${steps.length} 个步骤` : '',
+  ].filter(Boolean).join(' · ')
+  const shouldShowFullRecipe = task.status === 'created' || showRecipeDetail
+  const shouldShowExecutionRecipe = !showRecipeDetail && ['accepted', 'cooking'].includes(task.status)
   const footer = actionButtons.length > 0 ? (
     <View className='action-stack'>
       {actionButtons.map((action) => (
@@ -327,15 +431,35 @@ export default function Task() {
       topSpacerMode='header'
       footer={footer}
     >
-      <View className='section-card section-card--accent'>
-        <View className='mb-3 flex items-center justify-between'>
-          <Text className='text-xl font-bold text-gray-900'>{taskTitle}</Text>
+      <View className={`task-status-card task-status-card--${taskStage.cardTone}`}>
+        <View className='task-status-card__header'>
+          <View className='task-status-card__title-group'>
+            <Text className='task-status-card__eyebrow'>{taskTitle}</Text>
+            <Text className='task-status-card__title'>{taskStage.title}</Text>
+          </View>
           <StatusChip label={orderStatusMeta.label} tone={orderStatusMeta.tone} size='md' />
         </View>
-        <Text className='block text-sm text-gray-600'>
-          {task.creator?.nickname || '未命名'} → {task.assignee?.nickname || '待指派'}
-          {workspaceName ? ` · ${workspaceName}` : ''}
-        </Text>
+        <Text className='task-status-card__description'>{taskStage.description}</Text>
+        <View className='task-status-card__meta-row'>
+          <Text className='task-status-card__meta'>
+            {task.creator?.nickname || '未命名'} → {task.assignee?.nickname || '待指派'}
+          </Text>
+          <Text className='task-status-card__meta'>{workspaceName}</Text>
+        </View>
+        <View className='task-status-card__next'>
+          <Text className='task-status-card__next-label'>当前提示</Text>
+          <Text className='task-status-card__next-text'>{taskStage.next}</Text>
+        </View>
+        {latestEvent ? (
+          <View className='task-status-card__event'>
+            <Text className='task-status-card__event-label'>最新动态</Text>
+            <Text className='task-status-card__event-text'>
+              {eventLabelMap[latestEvent.eventType] || latestEvent.eventType}
+              {latestEvent.operator?.nickname ? ` · ${latestEvent.operator.nickname}` : ''}
+              {latestEvent.createdAt ? ` · ${latestEvent.createdAt}` : ''}
+            </Text>
+          </View>
+        ) : null}
         {task.remark ? (
           <View className='mt-4 rounded-2xl bg-sky-50 px-4 py-3'>
             <Text className='block text-xs uppercase tracking-wider text-sky-700'>备注</Text>
@@ -356,37 +480,93 @@ export default function Task() {
         ) : null}
       </View>
 
-      {/* 制作内容 — 执行人最需要，紧跟摘要 */}
-      {task.recipeSnapshot?.ingredientsJson?.length || task.recipeSnapshot?.stepsJson?.length ? (
-        <SectionCard title='制作内容' variant='soft'>
-          {task.recipeSnapshot?.ingredientsJson?.length ? (
-            <View className='recipe-detail-ingredient-cloud'>
-              {task.recipeSnapshot.ingredientsJson.map((ing, idx) => (
-                <View key={idx} className='recipe-detail-ingredient-chip'>
-                  <Text className='recipe-detail-ingredient-chip__name'>{ing.name}</Text>
-                  <Text className='recipe-detail-ingredient-chip__amount'>
-                    {[ing.amount, ing.unit].filter(Boolean).join(' ') || '适量'}
+      {ingredients.length || steps.length ? (
+        <SectionCard
+          title={shouldShowExecutionRecipe ? '制作执行台' : '制作内容'}
+          description={
+            shouldShowExecutionRecipe
+              ? '食材先压缩成备料摘要，步骤按执行顺序推进。'
+              : undefined
+          }
+          meta={recipeCountText || undefined}
+          variant={shouldShowExecutionRecipe ? 'accent' : 'soft'}
+          actions={
+            task.status !== 'created' ? (
+              <Text
+                className='form-text-link'
+                onClick={() => setShowRecipeDetail((value) => !value)}
+              >
+                {showRecipeDetail ? '收起详情' : '查看详情'}
+              </Text>
+            ) : null
+          }
+        >
+          {shouldShowExecutionRecipe ? (
+            <View>
+              {ingredients.length ? (
+                <View className='task-recipe-summary'>
+                  <Text className='task-recipe-summary__label'>备料摘要</Text>
+                  <Text className='task-recipe-summary__text'>
+                    {ingredients
+                      .map((ing) => `${ing.name}${[ing.amount, ing.unit].filter(Boolean).join('') || ''}`)
+                      .join('、')}
                   </Text>
                 </View>
-              ))}
+              ) : null}
+              {steps.length ? (
+                <View className={ingredients.length ? 'task-step-list task-step-list--spaced' : 'task-step-list'}>
+                  {steps.map((step, idx) => (
+                    <View
+                      key={idx}
+                      className={`task-step-card ${
+                        task.status === 'cooking' && idx === 0 ? 'task-step-card--active' : ''
+                      }`}
+                    >
+                      <Text className='task-step-card__index'>{idx + 1}</Text>
+                      <Text className='task-step-card__text'>{step.content}</Text>
+                    </View>
+                  ))}
+                </View>
+              ) : null}
             </View>
           ) : null}
-          {task.recipeSnapshot?.stepsJson?.length ? (
-            <View className={task.recipeSnapshot.ingredientsJson?.length ? 'mt-3' : ''}>
-              {task.recipeSnapshot.stepsJson.map((step, idx) => (
-                <View key={idx} className='feature-list-card feature-list-card--rose'>
-                  <View className='flex items-start justify-between gap-2'>
-                    <Text className='tool-pill'>{idx + 1}</Text>
-                    <Text className='feature-list-card__description flex-1'>{step.content}</Text>
-                  </View>
+          {shouldShowFullRecipe ? (
+            <View>
+              {ingredients.length ? (
+                <View className='recipe-detail-ingredient-cloud'>
+                  {ingredients.map((ing, idx) => (
+                    <View key={idx} className='recipe-detail-ingredient-chip'>
+                      <Text className='recipe-detail-ingredient-chip__name'>{ing.name}</Text>
+                      <Text className='recipe-detail-ingredient-chip__amount'>
+                        {[ing.amount, ing.unit].filter(Boolean).join(' ') || '适量'}
+                      </Text>
+                    </View>
+                  ))}
                 </View>
-              ))}
+              ) : null}
+              {steps.length ? (
+                <View className={ingredients.length ? 'mt-3' : ''}>
+                  {steps.map((step, idx) => (
+                    <View key={idx} className='feature-list-card feature-list-card--rose'>
+                      <View className='flex items-start justify-between gap-2'>
+                        <Text className='tool-pill'>{idx + 1}</Text>
+                        <Text className='feature-list-card__description flex-1'>{step.content}</Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              ) : null}
+            </View>
+          ) : null}
+          {!shouldShowExecutionRecipe && !shouldShowFullRecipe ? (
+            <View className='task-recipe-summary'>
+              <Text className='task-recipe-summary__label'>内容已收起</Text>
+              <Text className='task-recipe-summary__text'>点「查看详情」展开食材和完整制作步骤。</Text>
             </View>
           ) : null}
         </SectionCard>
       ) : null}
 
-      {/* 时间线 — 默认折叠 */}
       <SectionCard
         title='任务时间线'
         meta={task.events?.length ? `${task.events.length} 条` : undefined}
@@ -489,6 +669,18 @@ export default function Task() {
           <Text className='block text-sm text-gray-500'>点「展开」查看发送状态与异常。</Text>
         )}
       </SectionCard>
+
+      <InputDialog
+        visible={promptDialog.visible}
+        title={promptDialog.title}
+        value={promptDialog.value}
+        placeholder={promptDialog.placeholder}
+        confirmText='确认'
+        maxLength={120}
+        onChange={(value) => setPromptDialog((current) => ({ ...current, value }))}
+        onCancel={handlePromptCancel}
+        onConfirm={handlePromptConfirm}
+      />
     </Page>
   )
 }

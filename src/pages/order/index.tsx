@@ -19,6 +19,7 @@ import type { Recipe } from '@shared/types'
 import { showErrorToast } from '@/utils/error'
 import { getMemberDisplayName } from '@/utils/member'
 import { getRouteNumberParam, reLaunchToWorkspaceEntry } from '@/utils/router'
+import { requestCreatorOrderSubscriptions } from '@/utils/subscribe-message'
 
 const getAssigneeSubtitle = (member: WorkspaceMemberView) => {
   const nickname = member?.user?.nickname?.trim()
@@ -75,6 +76,7 @@ export default function Order() {
     if (!selectedAssigneeId) { Taro.showToast({ title: '请选择执行人', icon: 'none' }); return }
     setSubmitting(true)
     try {
+      await requestCreatorOrderSubscriptions()
       Taro.showLoading({ title: '提交中...' })
       const task = await taskApi.create(workspaceId, selectedRecipeId, selectedAssigneeId)
       Taro.hideLoading()

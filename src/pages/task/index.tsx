@@ -15,6 +15,7 @@ import {
 import { messageApi, taskApi, userApi } from '@/services/api'
 import { showErrorToast } from '@/utils/error'
 import { getRouteNumberParam } from '@/utils/router'
+import { requestAssigneeOrderSubscriptions } from '@/utils/subscribe-message'
 import type { User } from '@shared/types'
 
 type TaskStatus =
@@ -169,13 +170,27 @@ export default function Task() {
   }
 
   const handleAccept = () => {
-    runAction('accept', () => taskApi.accept(taskId), '已接任务')
+    runAction(
+      'accept',
+      async () => {
+        await requestAssigneeOrderSubscriptions()
+        return taskApi.accept(taskId)
+      },
+      '已接任务',
+    )
   }
 
   const handleReject = async () => {
     const reason = await promptText('拒绝任务', '告诉对方这次为什么不能接')
     if (reason === null || !reason) return
-    runAction('reject', () => taskApi.reject(taskId, reason), '已拒绝')
+    runAction(
+      'reject',
+      async () => {
+        await requestAssigneeOrderSubscriptions()
+        return taskApi.reject(taskId, reason)
+      },
+      '已拒绝',
+    )
   }
 
   const handleStart = async () => {
@@ -189,7 +204,10 @@ export default function Task() {
     if (remark === null) return
     runAction(
       'complete',
-      () => taskApi.complete(taskId, remark || undefined),
+      async () => {
+        await requestAssigneeOrderSubscriptions()
+        return taskApi.complete(taskId, remark || undefined)
+      },
       '已完成',
     )
   }

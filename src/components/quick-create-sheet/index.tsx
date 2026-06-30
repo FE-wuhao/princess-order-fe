@@ -11,6 +11,7 @@ import type { Recipe } from '@shared/types'
 
 import { getMemberDisplayName } from '@/utils/member'
 import { showErrorToast } from '@/utils/error'
+import { requestCreatorOrderSubscriptions } from '@/utils/subscribe-message'
 import './index.scss'
 
 interface QuickCreateSheetProps {
@@ -84,6 +85,7 @@ export default function QuickCreateSheet({
     if (!selectedRecipeId || !selectedAssigneeId || !workspaceId) return
     setSubmitting(true)
     try {
+      await requestCreatorOrderSubscriptions()
       Taro.showLoading({ title: '创建中...' })
       const task = await taskApi.create(workspaceId, selectedRecipeId, selectedAssigneeId)
       Taro.hideLoading()

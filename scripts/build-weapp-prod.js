@@ -17,6 +17,7 @@ try {
 }
 
 require('./generate-app-version')
+require('./generate-subscribe-template-config')
 
 const result = spawnSync(
   'taro',

@@ -6,7 +6,7 @@ import {
   useState,
 } from "react";
 import { Button, Text, View } from "@tarojs/components";
-import Taro, { useDidShow } from "@tarojs/taro";
+import Taro, { useDidShow, usePullDownRefresh } from "@tarojs/taro";
 import EmptyState from "@/components/empty-state";
 import InputDialog from "@/components/input-dialog";
 import MiniProgramTopSpacer from "@/components/mini-program-top-spacer";
@@ -107,10 +107,10 @@ export default function Index() {
   );
 
   // ── 加载 ──
-  const loadDashboard = useCallback(async () => {
+  const loadDashboard = useCallback(async (forceRefresh = false) => {
     lastLoadTimeRef.current = Date.now();
     try {
-      await loadWorkspaces();
+      await loadWorkspaces(forceRefresh);
       const currentWorkspaces =
         useWorkspaceStore.getState().workspaces;
       const wsId = useWorkspaceStore.getState().activeWorkspaceId;
@@ -118,8 +118,8 @@ export default function Index() {
         redirectToWorkspaceEntry();
         return;
       }
-      loadNotifications();
-      await refreshTasks({ mine: true });
+      await loadNotifications();
+      await refreshTasks({ mine: true }, forceRefresh);
     } catch (error) {
       showErrorToast(error, "首页加载失败");
     }
@@ -143,8 +143,16 @@ export default function Index() {
   }, [ensureLoginAndLoad]);
 
   useDidShow(() => {
-    if (isLoggedIn && Date.now() - lastLoadTimeRef.current > 3000) {
-      loadDashboard();
+    if (isLoggedIn && lastLoadTimeRef.current > 0) {
+      loadDashboard(true);
+    }
+  });
+
+  usePullDownRefresh(async () => {
+    try {
+      await loadDashboard(true);
+    } finally {
+      Taro.stopPullDownRefresh();
     }
   });
 

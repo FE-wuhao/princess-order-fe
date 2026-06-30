@@ -17,6 +17,7 @@ export interface WorkspaceMemberView {
   userId: number
   remark: string | null
   displayRole: WorkspaceMembership['displayRole']
+  status: WorkspaceMembership['status']
   canCreateTask: boolean
   canAcceptTask: boolean
   canManageWorkspace: boolean
@@ -49,6 +50,7 @@ const normalizeWorkspaceDetail = (
           userId: membership.userId as number,
           remark: (membership.remark as string) || null,
           displayRole: membership.displayRole as WorkspaceMembership['displayRole'],
+          status: membership.status as WorkspaceMembership['status'],
           canCreateTask: membership.canCreateTask as boolean,
           canAcceptTask: membership.canAcceptTask as boolean,
           canManageWorkspace: membership.canManageWorkspace as boolean,
@@ -97,6 +99,12 @@ export const workspaceApi = {
       url: `/workspaces/${workspaceId}`,
       method: 'PATCH',
       data,
+    }),
+
+  delete: (workspaceId: number) =>
+    request<{ success: boolean }>({
+      url: `/workspaces/${workspaceId}`,
+      method: 'DELETE',
     }),
 
   createInvite: (workspaceId: number, expiredAt?: string) =>

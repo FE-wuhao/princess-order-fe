@@ -4,6 +4,7 @@ import { Button, Input, Picker, Switch, Text, View } from '@tarojs/components'
 import AsyncContainer from '@/components/async-container'
 import MemberAvatar from '@/components/member-avatar'
 import Page from '@/components/page'
+import Pressable from '@/components/pressable'
 import SectionCard from '@/components/section-card'
 import { SkeletonCard } from '@/components/skeleton'
 import { workspaceApi } from '@/services/api'
@@ -38,16 +39,54 @@ const statusOptions: Array<{ label: string; value: MemberStatus }> = [
   { label: '已移除', value: 'removed' },
 ]
 
-// 高优先级权限置顶
-const permissionItems: Array<{ key: keyof MemberFormState; title: string }> = [
-  { key: 'canCreateTask', title: '发起任务' },
-  { key: 'canAcceptTask', title: '接受制作' },
-  { key: 'canManageRecipes', title: '管理菜谱' },
-  { key: 'canManageMembers', title: '管理成员' },
-  { key: 'canManageWorkspace', title: '管理空间' },
+const rolePermissionPresets: Record<
+  DisplayRole,
+  Pick<MemberFormState, 'canCreateTask' | 'canAcceptTask'>
+> = {
+  requester: {
+    canCreateTask: true,
+    canAcceptTask: false,
+  },
+  cook: {
+    canCreateTask: false,
+    canAcceptTask: true,
+  },
+  both: {
+    canCreateTask: true,
+    canAcceptTask: true,
+  },
+}
+
+const permissionGroups: Array<{
+  title: string
+  description: string
+  items: Array<{ key: keyof MemberFormState; title: string; desc: string }>
+}> = [
+  {
+    title: '任务权限',
+    description: '决定这个成员能否参与日常点餐流转。',
+    items: [
+      { key: 'canCreateTask', title: '发起任务', desc: '可以选择菜谱并指派成员制作。' },
+      { key: 'canAcceptTask', title: '接受制作', desc: '可以成为任务的执行成员。' },
+    ],
+  },
+  {
+    title: '内容管理',
+    description: '控制空间里的菜谱资产维护。',
+    items: [
+      { key: 'canManageRecipes', title: '管理菜谱', desc: '可以新增、编辑或归档空间菜谱。' },
+    ],
+  },
+  {
+    title: '空间管理',
+    description: '只建议给真正负责维护空间的人。',
+    items: [
+      { key: 'canManageMembers', title: '管理成员', desc: '可以调整成员角色、称呼和权限。' },
+      { key: 'canManageWorkspace', title: '管理空间', desc: '可以维护空间级设置和高级管理能力。' },
+    ],
+  },
 ]
 
-const roleIndexByValue = roleOptions.reduce<Record<string, number>>((acc, o, i) => { acc[o.value] = i; return acc }, {} as Record<string, number>)
 const statusIndexByValue = statusOptions.reduce<Record<string, number>>((acc, o, i) => { acc[o.value] = i; return acc }, {} as Record<string, number>)
 
 export default function MemberForm() {
@@ -59,6 +98,7 @@ export default function MemberForm() {
   })
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [removing, setRemoving] = useState(false)
 
   const router = useRouter()
   const workspaceId = getRouteNumberParam(router.params, 'workspaceId')
@@ -100,6 +140,41 @@ export default function MemberForm() {
     finally { setSaving(false) }
   }
 
+  const handleSelectRole = (displayRole: DisplayRole) => {
+    setForm((current) => ({
+      ...current,
+      displayRole,
+      ...rolePermissionPresets[displayRole],
+    }))
+  }
+
+  const handleRemoveMember = async () => {
+    if (removing || !workspaceId || !memberId || !member) return
+
+    const displayName = getMemberDisplayName(member)
+    const result = await Taro.showModal({
+      title: '移除成员',
+      content: `确认将「${displayName}」移出当前空间吗？移除后对方将不能继续进入该空间。`,
+      confirmText: '移除',
+      confirmColor: '#c2415d',
+    })
+    if (!result.confirm) return
+
+    setRemoving(true)
+    try {
+      Taro.showLoading({ title: '移除中...' })
+      await workspaceApi.updateMember(workspaceId, memberId, { status: 'removed' })
+      Taro.hideLoading()
+      Taro.showToast({ title: '已移除', icon: 'success' })
+      setTimeout(() => { Taro.navigateBack() }, 500)
+    } catch (error) {
+      Taro.hideLoading()
+      showErrorToast(error, '移除失败')
+    } finally {
+      setRemoving(false)
+    }
+  }
+
   const footer = (
     <Button className='app-button app-button--primary' loading={saving} disabled={saving} onClick={handleSave}>
       保存成员设置
@@ -133,13 +208,13 @@ export default function MemberForm() {
                 </View>
               </View>
 
-              {/* 空间内备注 — 主输入 */}
-              <View className='recipe-primary-name'>
+              <View className='member-form-panel'>
+                <Text className='member-form-panel__title'>空间内称呼</Text>
+                <Text className='member-form-panel__desc'>只在当前空间显示，用来替代昵称。</Text>
                 <Input
-                  className='recipe-primary-name__input'
+                  className='form-control member-form-panel__input'
                   confirmType='done'
                   placeholder='空间内备注，例如：管家、小厨'
-                  placeholderClass='recipe-primary-name__placeholder'
                   maxlength={50}
                   value={form.remark}
                   onConfirm={handleSave}
@@ -147,36 +222,90 @@ export default function MemberForm() {
                 />
               </View>
 
-              {/* 角色与状态 — 属性条 */}
-              <View className='recipe-attr-bar'>
-                <Picker mode='selector' range={roleOptions.map((o) => o.label)}
-                  value={roleIndexByValue[form.displayRole] || 0}
-                  onChange={(e) => { const idx = Number(e.detail.value); setForm((c) => ({ ...c, displayRole: roleOptions[idx]?.value || 'cook' })) }}>
-                  <View className='recipe-attr-bar__field'>
-                    <Text className='recipe-attr-bar__field-label'>角色</Text>
-                    <Text className='recipe-attr-bar__picker'>{roleOptions[roleIndexByValue[form.displayRole] || 0].label}</Text>
+              <View className='member-form-panel'>
+                <View className='member-form-panel__header'>
+                  <View>
+                    <Text className='member-form-panel__title'>角色</Text>
+                    <Text className='member-form-panel__desc'>角色影响成员在任务里的默认定位。</Text>
                   </View>
-                </Picker>
+                </View>
+                <View className='member-role-segment'>
+                  {roleOptions.map((option) => (
+                    <Pressable
+                      key={option.value}
+                      className='member-role-segment__item-wrap'
+                      onClick={() => handleSelectRole(option.value)}
+                    >
+                      <View
+                        className={`member-role-segment__item ${
+                          form.displayRole === option.value
+                            ? 'member-role-segment__item--active'
+                            : ''
+                        }`}
+                      >
+                        <Text className='member-role-segment__label'>{option.label}</Text>
+                      </View>
+                    </Pressable>
+                  ))}
+                </View>
+                <Text className='member-form-panel__note'>
+                  切换角色会同步调整发起任务和接受制作权限，管理权限需单独设置。
+                </Text>
+              </View>
+
+              <View className='member-status-row'>
+                <View>
+                  <Text className='member-status-row__label'>成员状态</Text>
+                  <Text className='member-status-row__desc'>异常状态会影响成员继续参与空间。</Text>
+                </View>
                 <Picker mode='selector' range={statusOptions.map((o) => o.label)}
                   value={statusIndexByValue[form.status] || 0}
                   onChange={(e) => { const idx = Number(e.detail.value); setForm((c) => ({ ...c, status: statusOptions[idx]?.value || 'active' })) }}>
-                  <View className='recipe-attr-bar__field'>
-                    <Text className='recipe-attr-bar__field-label'>状态</Text>
-                    <Text className='recipe-attr-bar__picker'>{statusOptions[statusIndexByValue[form.status] || 0].label}</Text>
+                  <View className='member-status-row__picker'>
+                    <Text className='member-status-row__value'>{statusOptions[statusIndexByValue[form.status] || 0].label}</Text>
                   </View>
                 </Picker>
               </View>
 
-              {/* 权限 — 紧凑开关，无 desc */}
-              <SectionCard title='权限' meta={`${permissionItems.length} 项`} variant='soft'>
-                <View>
-                  {permissionItems.map((item) => (
-                    <View key={item.key} className='permission-row permission-row--compact'>
-                      <Text className='permission-row__title'>{item.title}</Text>
-                      <Switch checked={Boolean(form[item.key])}
-                        onChange={(e) => setForm((c) => ({ ...c, [item.key]: Boolean(e.detail.value) }))} />
+              <SectionCard title='权限' description='按使用场景分组，日常权限和管理权限分开看。' variant='soft'>
+                <View className='member-permission-groups'>
+                  {permissionGroups.map((group) => (
+                    <View key={group.title} className='member-permission-group'>
+                      <View className='member-permission-group__header'>
+                        <Text className='member-permission-group__title'>{group.title}</Text>
+                        <Text className='member-permission-group__desc'>{group.description}</Text>
+                      </View>
+                      {group.items.map((item) => (
+                        <View key={item.key} className='permission-row member-permission-row'>
+                          <View className='permission-row__text'>
+                            <Text className='permission-row__title'>{item.title}</Text>
+                            <Text className='permission-row__desc'>{item.desc}</Text>
+                          </View>
+                          <Switch checked={Boolean(form[item.key])}
+                            onChange={(e) => setForm((c) => ({ ...c, [item.key]: Boolean(e.detail.value) }))} />
+                        </View>
+                      ))}
                     </View>
                   ))}
+                </View>
+              </SectionCard>
+
+              <SectionCard title='成员操作' description='移除后该成员不再显示在当前空间成员列表中。' variant='warning'>
+                <View className='member-danger-card'>
+                  <View>
+                    <Text className='member-danger-card__title'>移除成员</Text>
+                    <Text className='member-danger-card__desc'>
+                      需要成员管理权限。不能直接移除自己。
+                    </Text>
+                  </View>
+                  <Button
+                    className='app-button app-button--warn app-button--mini'
+                    loading={removing}
+                    disabled={removing}
+                    onClick={handleRemoveMember}
+                  >
+                    移除
+                  </Button>
                 </View>
               </SectionCard>
             </View>

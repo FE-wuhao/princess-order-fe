@@ -39,10 +39,20 @@
 }
 
 .dashboard-toolbar .workspace-switcher__trigger,
-.dashboard-toolbar taro-button-core.workspace-switcher__trigger {
+.dashboard-toolbar taro-button-core.workspace-switcher__trigger,
+.dashboard-toolbar button.workspace-switcher__trigger {
   min-height: 46px;
-  padding-top: 5px;
-  padding-bottom: 5px;
+  padding: 5px 44px 5px 12px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  box-shadow: none;
+}
+
+.dashboard-toolbar .workspace-switcher__trigger::after,
+.dashboard-toolbar taro-button-core.workspace-switcher__trigger::after,
+.dashboard-toolbar button.workspace-switcher__trigger::after {
+  border: 0;
 }
 
 .dashboard-toolbar .toolbar-icon-button {

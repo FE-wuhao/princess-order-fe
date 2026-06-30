@@ -8,6 +8,7 @@
     "typescript": true
   },
   "scripts": {
+    "build:weapp:prod": "node ./scripts/build-weapp-prod.js",
     "build:weapp": "node ./scripts/generate-app-version.js && taro build --type weapp",
     "build:swan": "node ./scripts/generate-app-version.js && taro build --type swan",
     "build:alipay": "node ./scripts/generate-app-version.js && taro build --type alipay",

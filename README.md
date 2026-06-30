@@ -18,6 +18,9 @@ npm run dev:weapp
 
 # 构建（微信小程序）
 npm run build:weapp
+
+# 构建（微信小程序正式环境）
+npm run build:weapp:prod
 ```
 
 ## 样式方案

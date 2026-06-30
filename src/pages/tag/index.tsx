@@ -72,7 +72,7 @@ export default function Tag() {
     rt === 'requester' ? 'warning' : rt === 'cook' ? 'accent' : rt === 'both' ? 'success' : ('neutral' as const)
 
   return (
-    <Page title='称谓模板'>
+    <Page title='称谓模板' topSpacerMode='header'>
       <View className='page-toolbar'>
         <View className='page-toolbar__main'>
           <Text className='page-toolbar__title'>称谓模板</Text>

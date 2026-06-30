@@ -1,6 +1,6 @@
 /* Shared editorial layer: visual hierarchy and alignment across H5/weapp. */
 page, body, #app { background: var(--ui-bg-page); color: var(--ui-text-primary); font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif; }
-.page-shell { position: relative; width: min(100%, 480px); min-height: 100vh; margin: 0 auto; box-sizing: border-box; background: radial-gradient(circle at 10% 5%, rgba(169, 47, 76, .055), transparent 24%), linear-gradient(rgba(50, 31, 37, .025) 1px, transparent 1px); background-size: auto, 100% 28px; }
+.page-shell { position: relative; width: min(100%, 480px); min-height: 100vh; margin: 0 auto; box-sizing: border-box; background: linear-gradient(rgba(50, 31, 37, .025) 1px, transparent 1px), var(--ui-bg-page); background-size: 100% 28px, auto; }
 .toolbar-row { margin-bottom: 0; }
 .toolbar-row__main { min-width: 0; }
 .toolbar-row > .pressable { width: 44px; flex: 0 0 44px; }
@@ -38,4 +38,17 @@ page, body, #app { background: var(--ui-bg-page); color: var(--ui-text-primary);
 .app-button--primary, taro-button-core.app-button--primary { background: var(--ui-brand-600); box-shadow: none; }
 .app-button--ghost, taro-button-core.app-button--ghost { border-color: rgba(50, 31, 37, .13); background: #fffdf8; color: var(--ui-text-primary); }
 .bottom-action-bar { border-top-color: rgba(50, 31, 37, .12); background: rgba(247, 240, 228, .95); box-shadow: 0 -8px 26px rgba(67, 42, 37, .08); }
-@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in-up,
+  .animate-fade-in-down,
+  .animate-scale-in,
+  .animate-slide-up,
+  .pressable,
+  .app-button,
+  .section-card {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}

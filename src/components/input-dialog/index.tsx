@@ -47,10 +47,11 @@ export default function InputDialog({
           />
         ) : (
           <Input
-            className='form-control mt-4'
+            className='form-control dialog-card__input mt-4'
             maxlength={maxLength}
             confirmType='done'
             placeholder={placeholder}
+            placeholderClass='dialog-card__input-placeholder'
             value={value}
             onConfirm={onConfirm}
             onInput={(event) => onChange(event.detail.value)}

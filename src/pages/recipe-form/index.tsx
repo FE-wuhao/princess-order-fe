@@ -31,7 +31,8 @@ const difficultyOptions: Array<{ label: string; value: Difficulty }> = [
   { label: '有点挑战', value: 'hard' },
 ]
 
-const recipeNamePlaceholderStyle = 'color: rgba(50, 31, 37, 0.42); font-weight: 500;'
+const recipeNamePlaceholderStyle =
+  'color: rgba(50, 31, 37, 0.42); font-weight: 500;'
 
 const createEmptyIngredient = (): RecipeIngredientFormItem => ({
   name: '',
@@ -328,7 +329,7 @@ export default function RecipeForm() {
 
   if (loading) {
     return (
-      <Page title={isEdit ? '编辑菜谱' : '新建菜谱'} tone='sunset'>
+      <Page title={isEdit ? '编辑菜谱' : '新建菜谱'} tone='sunset' topSpacerMode='header'>
         <SkeletonCard />
         <SkeletonCard />
         <SkeletonCard />
@@ -360,6 +361,7 @@ export default function RecipeForm() {
     <Page
       title={isEdit ? '编辑菜谱' : '新建菜谱'}
       tone='sunset'
+      topSpacerMode='header'
       headerRight={headerRight}
       footer={footer}
     >

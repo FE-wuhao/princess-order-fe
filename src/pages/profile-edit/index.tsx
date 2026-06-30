@@ -67,7 +67,7 @@ export default function ProfileEditPage() {
 
   if (loading || !user) {
     return (
-      <Page title='我的资料' tone='sky'>
+      <Page title='我的资料' tone='sky' topSpacerMode='header'>
         <SkeletonCard />
         <SkeletonCard />
       </Page>
@@ -75,7 +75,7 @@ export default function ProfileEditPage() {
   }
 
   return (
-    <Page title='我的资料' tone='sky' className='animate-fade-in-up'>
+    <Page title='我的资料' tone='sky' topSpacerMode='header' className='animate-fade-in-up'>
       <SectionCard title='账号信息' variant='accent'>
         <View className='profile-row'>
           <Text className='profile-row__label'>头像</Text>

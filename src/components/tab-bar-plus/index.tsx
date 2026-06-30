@@ -6,7 +6,7 @@ import Taro from '@tarojs/taro'
 import { useState } from 'react'
 import QuickCreateSheet from '@/components/quick-create-sheet'
 import { useWorkspaceStore } from '@/stores/useWorkspaceStore'
-import './index.module.scss'
+import './index.scss'
 
 type TabKey = 'index' | 'recipes' | 'profile'
 

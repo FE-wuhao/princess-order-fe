@@ -32,7 +32,7 @@ export default function NotificationsPage() {
   }
 
   return (
-    <Page title='通知记录' tone='sky'>
+    <Page title='通知记录' tone='sky' topSpacerMode='header'>
       {loading ? (
         <View><SkeletonCard /><SkeletonCard /><SkeletonCard /></View>
       ) : notifications.length === 0 ? (
@@ -66,4 +66,3 @@ export default function NotificationsPage() {
     </Page>
   )
 }
-

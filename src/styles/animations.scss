@@ -86,16 +86,26 @@
 
 // ── stagger 延迟入场（列表项逐项出现）──
 
-.animate-stagger > *:nth-child(1) { animation-delay: 0ms; }
-.animate-stagger > *:nth-child(2) { animation-delay: 60ms; }
-.animate-stagger > *:nth-child(3) { animation-delay: 120ms; }
-.animate-stagger > *:nth-child(4) { animation-delay: 180ms; }
-.animate-stagger > *:nth-child(5) { animation-delay: 240ms; }
-.animate-stagger > *:nth-child(6) { animation-delay: 300ms; }
-.animate-stagger > *:nth-child(7) { animation-delay: 360ms; }
-.animate-stagger > *:nth-child(8) { animation-delay: 420ms; }
-.animate-stagger > *:nth-child(9) { animation-delay: 480ms; }
-.animate-stagger > *:nth-child(10) { animation-delay: 540ms; }
+.animate-stagger > view:nth-child(1),
+.animate-stagger > taro-view-core:nth-child(1) { animation-delay: 0ms; }
+.animate-stagger > view:nth-child(2),
+.animate-stagger > taro-view-core:nth-child(2) { animation-delay: 60ms; }
+.animate-stagger > view:nth-child(3),
+.animate-stagger > taro-view-core:nth-child(3) { animation-delay: 120ms; }
+.animate-stagger > view:nth-child(4),
+.animate-stagger > taro-view-core:nth-child(4) { animation-delay: 180ms; }
+.animate-stagger > view:nth-child(5),
+.animate-stagger > taro-view-core:nth-child(5) { animation-delay: 240ms; }
+.animate-stagger > view:nth-child(6),
+.animate-stagger > taro-view-core:nth-child(6) { animation-delay: 300ms; }
+.animate-stagger > view:nth-child(7),
+.animate-stagger > taro-view-core:nth-child(7) { animation-delay: 360ms; }
+.animate-stagger > view:nth-child(8),
+.animate-stagger > taro-view-core:nth-child(8) { animation-delay: 420ms; }
+.animate-stagger > view:nth-child(9),
+.animate-stagger > taro-view-core:nth-child(9) { animation-delay: 480ms; }
+.animate-stagger > view:nth-child(10),
+.animate-stagger > taro-view-core:nth-child(10) { animation-delay: 540ms; }
 
 // ── 弹窗动画 ──
 

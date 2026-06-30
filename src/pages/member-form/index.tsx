@@ -110,6 +110,7 @@ export default function MemberForm() {
     <Page
       title='成员设置'
       tone='sunset'
+      topSpacerMode='header'
       footer={footer}
     >
       <AsyncContainer

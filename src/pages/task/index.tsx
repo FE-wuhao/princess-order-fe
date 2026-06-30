@@ -262,7 +262,7 @@ export default function Task() {
 
   if (loading) {
     return (
-      <Page title='任务详情' tone='sky'>
+      <Page title='任务详情' tone='sky' topSpacerMode='header'>
         <SkeletonCard />
         <SkeletonCard />
         <SkeletonCard />
@@ -272,7 +272,7 @@ export default function Task() {
 
   if (!task) {
     return (
-      <Page title='任务详情' tone='sky'>
+      <Page title='任务详情' tone='sky' topSpacerMode='header'>
         <EmptyState tone='gray' title='任务不存在' description='该任务可能已被删除。' />
       </Page>
     )
@@ -306,6 +306,7 @@ export default function Task() {
     <Page
       title='任务详情'
       tone='sky'
+      topSpacerMode='header'
       footer={footer}
     >
       <View className='section-card section-card--accent'>

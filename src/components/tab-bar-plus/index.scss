@@ -1,7 +1,5 @@
-:global {
-  .taro-tabbar__container,
-  .taro-tabbar__panel { display: none !important; }
-}
+.taro-tabbar__container,
+.taro-tabbar__panel { display: none !important; }
 
 .custom-tabbar-spacer { height: calc(env(safe-area-inset-bottom) + 82px); }
 
@@ -28,11 +26,11 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: var(--ui-text-tertiary);
+  color: var(--ui-text-tertiary, #a18c98);
 }
 
 .custom-tabbar__item--active {
-  color: var(--ui-brand-500);
+  color: var(--ui-brand-500, #c65a72);
 }
 
 .custom-tabbar__icon {
@@ -136,7 +134,7 @@
 
 // ── 点单：与其他项同尺寸(24px)的描边「+」，常亮品牌色 ──
 .custom-tabbar__item--plus {
-  color: var(--ui-brand-500);
+  color: var(--ui-brand-500, #c65a72);
 }
 
 .custom-tabbar__icon--plus {

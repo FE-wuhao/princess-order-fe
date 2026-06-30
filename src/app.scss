@@ -51,12 +51,10 @@ body,
 
 // space-y 子元素间距（兼容 Taro 渲染的 taro-view-core 标签）
 .space-y-3 > view + view,
-.space-y-3 > taro-view-core + taro-view-core,
-.space-y-3 > * + * { margin-top: 12px; }
+.space-y-3 > taro-view-core + taro-view-core { margin-top: 12px; }
 
 .space-y-4 > view + view,
-.space-y-4 > taro-view-core + taro-view-core,
-.space-y-4 > * + * { margin-top: 16px; }
+.space-y-4 > taro-view-core + taro-view-core { margin-top: 16px; }
 
 .w-full { width: 100%; }
 
@@ -330,7 +328,8 @@ taro-button-core.app-button::after,
 }
 
 .taro_page.page-shell--login,
-.taro_page.page-shell--login > * {
+.taro_page.page-shell--login > view,
+.taro_page.page-shell--login > taro-view-core {
   touch-action: pan-y pinch-zoom;
 }
 
@@ -341,6 +340,10 @@ taro-button-core.app-button::after,
 .login-page__content {
   width: min(100%, 420px);
   margin: auto;
+}
+
+.page-shell--login > .mini-program-top-spacer {
+  margin: -20px -16px 0;
 }
 
 .page-shell--login .page-hero {
@@ -374,8 +377,112 @@ taro-button-core.app-button::after,
   text-align: center;
 }
 
+.workspace-entry-page {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+
+.workspace-entry-page .page-layout__scroll--padded {
+  padding: 0 0 24px;
+}
+
+.workspace-entry-nav {
+  position: relative;
+  height: 92px;
+  margin: 0;
+  box-sizing: border-box;
+  border-bottom: 1px solid rgba(50, 31, 37, 0.08);
+  background: rgba(255, 250, 241, 0.78);
+}
+
+.workspace-entry-nav__home,
+taro-button-core.workspace-entry-nav__home {
+  position: absolute;
+  left: 16px;
+  top: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  min-width: 40px;
+  height: 40px;
+  min-height: 40px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid rgba(47, 31, 40, 0.22);
+  border-radius: 999px;
+  background: rgba(47, 31, 40, 0.14);
+  box-sizing: border-box;
+  line-height: 1;
+}
+
+.workspace-entry-nav__home::after,
+taro-button-core.workspace-entry-nav__home::after {
+  border: 0;
+}
+
+.workspace-entry-nav__title {
+  position: absolute;
+  left: 96px;
+  right: 96px;
+  top: 45px;
+  display: block;
+  color: var(--ui-text-primary);
+  font-size: 20px;
+  line-height: 30px;
+  font-weight: 800;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-entry-nav__placeholder {
+  position: absolute;
+  right: 16px;
+  top: 44px;
+  width: 96px;
+  height: 40px;
+}
+
+.icon-home {
+  position: relative;
+  width: 18px;
+  height: 16px;
+  color: #1f1a1d;
+}
+
+.icon-home::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 12px;
+  height: 12px;
+  border-left: 3px solid currentColor;
+  border-top: 3px solid currentColor;
+  transform: translateX(-50%) rotate(45deg);
+  box-sizing: border-box;
+}
+
+.icon-home::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  bottom: 0;
+  width: 12px;
+  height: 10px;
+  border: 3px solid currentColor;
+  border-top: 0;
+  border-radius: 1px 1px 2px 2px;
+  box-sizing: border-box;
+}
+
 .workspace-entry {
   margin-top: 40px;
+  padding: 0 16px;
+  box-sizing: border-box;
   text-align: center;
 }
 
@@ -396,8 +503,17 @@ taro-button-core.app-button::after,
 }
 
 .workspace-entry__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   margin-top: 28px;
   text-align: left;
+}
+
+.workspace-entry__actions .app-button,
+.workspace-entry__actions taro-button-core.app-button,
+.workspace-entry__actions button.app-button {
+  margin-top: 0;
 }
 
 .workspace-entry__loading {

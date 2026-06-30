@@ -54,8 +54,10 @@ export default {
   pages,
   window: {
     backgroundTextStyle: 'light',
-    navigationBarBackgroundColor: '#f7f0e4',
+    backgroundColor: '#ffffff',
+    navigationBarBackgroundColor: '#ffffff',
     navigationBarTitleText: '公主请点餐吧',
+    navigationStyle: 'custom',
     navigationBarTextStyle: 'black',
   },
   ...(process.env.TARO_ENV === 'h5'

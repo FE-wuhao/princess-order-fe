@@ -123,7 +123,7 @@ export default function Order() {
   )
 
   return (
-    <Page title='发起任务' tone='sunset' footer={footer}>
+    <Page title='发起任务' tone='sunset' topSpacerMode='header' footer={footer}>
       <SectionCard title='选择菜谱' meta={`${recipes.length} 个可用`} variant='accent'>
         <AsyncContainer
           loading={recipesLoading && recipes.length === 0}

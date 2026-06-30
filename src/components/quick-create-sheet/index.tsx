@@ -11,7 +11,7 @@ import type { Recipe } from '@shared/types'
 
 import { getMemberDisplayName } from '@/utils/member'
 import { showErrorToast } from '@/utils/error'
-import './index.module.scss'
+import './index.scss'
 
 interface QuickCreateSheetProps {
   visible: boolean

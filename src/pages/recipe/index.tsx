@@ -70,6 +70,7 @@ export default function RecipePage() {
       <Page
         title='菜谱详情'
         tone='sunset'
+        topSpacerMode='header'
         footer={footer}
         headerRight={
           <Button className='app-button app-button--ghost app-button--mini' onClick={handleEdit}>

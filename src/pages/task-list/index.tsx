@@ -106,7 +106,7 @@ export default function TaskList() {
   const nonEmptySections = boardSections.filter((s) => s.tasks.length > 0)
 
   return (
-    <Page title='任务面板' tone='sky'>
+    <Page title='任务面板' tone='sky' topSpacerMode='header'>
       <View className='page-toolbar'>
         <View className='page-toolbar__main'>
           <Text className='page-toolbar__title'>任务面板</Text>

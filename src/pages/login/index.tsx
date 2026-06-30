@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Button, Input, Text, View } from '@tarojs/components'
 import Taro from '@tarojs/taro'
 import FormField from '@/components/form-field'
+import MiniProgramTopSpacer from '@/components/mini-program-top-spacer'
 import SectionCard from '@/components/section-card'
 import { APP_VERSION } from '@/config/app-version'
 import { accountLogin, accountRegister, checkAuth } from '@/utils/auth'
@@ -59,6 +60,8 @@ export default function LoginPage() {
       className='page-shell page-shell--sky page-shell--login px-4 py-5 animate-fade-in-down'
       style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}
     >
+      <MiniProgramTopSpacer />
+
       <View className='login-page__content'>
         <Text className='login-brand'>公主请点餐吧</Text>
 
@@ -108,4 +111,3 @@ export default function LoginPage() {
     </View>
   )
 }
-

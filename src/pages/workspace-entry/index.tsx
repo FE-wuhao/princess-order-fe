@@ -72,14 +72,14 @@ export default function WorkspaceEntryPage() {
 
   if (loading) {
     return (
-      <Page tone='sunset' showHeader={false}>
+      <Page tone='sunset' showHeader={false} className='workspace-entry-page'>
         <Text className='workspace-entry__loading'>加载中…</Text>
       </Page>
     )
   }
 
   return (
-    <Page tone='sunset' showHeader={false} className='animate-fade-in-up'>
+    <Page tone='sunset' showHeader={false} className='workspace-entry-page animate-fade-in-up'>
       <View className='workspace-entry'>
         <Text className='workspace-entry__title'>加入或创建厨房空间</Text>
         <Text className='workspace-entry__desc'>有了空间，菜谱、成员和任务才能流转起来。</Text>
